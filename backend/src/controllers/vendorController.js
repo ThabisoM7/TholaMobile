@@ -15,6 +15,7 @@ const registerBusiness = async (req, res, next) => {
       latitude,
       longitude,
       logo_url,
+      banner_url,
     } = req.body;
 
     const vendorExists = await prisma.vendor.findUnique({
@@ -38,6 +39,7 @@ const registerBusiness = async (req, res, next) => {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         logo_url,
+        banner_url,
       },
     });
 
@@ -111,9 +113,17 @@ const updateVendor = async (req, res, next) => {
       throw new Error('User not authorized to update this business');
     }
 
+    const updateData = { ...req.body };
+    if (updateData.latitude !== undefined) {
+      updateData.latitude = parseFloat(updateData.latitude);
+    }
+    if (updateData.longitude !== undefined) {
+      updateData.longitude = parseFloat(updateData.longitude);
+    }
+
     const updatedVendor = await prisma.vendor.update({
       where: { id: req.params.id },
-      data: req.body,
+      data: updateData,
     });
 
     res.status(200).json(updatedVendor);
@@ -144,7 +154,6 @@ const getMyVendorProfile = async (req, res, next) => {
     next(error);
   }
 };
-
 // @desc    Get vendor analytics
 // @route   GET /vendors/analytics
 // @access  Private (Vendor only)
@@ -181,6 +190,29 @@ const getVendorAnalytics = async (req, res, next) => {
   }
 };
 
+
+// @desc    Record customer interaction
+// @route   POST /vendors/interaction
+// @access  Private (Customer only)
+const recordInteraction = async (req, res, next) => {
+  try {
+    const { vendor_id, product_id, type } = req.body;
+
+    const interaction = await prisma.interaction.create({
+      data: {
+        user_id: req.user.id,
+        vendor_id,
+        product_id,
+        type,
+      },
+    });
+
+    res.status(201).json(interaction);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerBusiness,
   getVendors,
@@ -188,4 +220,5 @@ module.exports = {
   updateVendor,
   getMyVendorProfile,
   getVendorAnalytics,
+  recordInteraction,
 };

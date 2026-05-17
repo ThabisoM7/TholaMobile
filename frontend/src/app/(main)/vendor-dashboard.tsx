@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, Card, useTheme, Avatar, FAB, ActivityIndicator } from 'react-native-paper';
 import { useAuthStore } from '../../store/authStore';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import apiClient from '../../api/client';
 
 export default function VendorDashboard() {
@@ -12,9 +12,11 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [kycStatus, setKycStatus] = useState<string>('PENDING');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const fetchData = async () => {
     try {

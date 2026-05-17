@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useTheme, Searchbar, FAB, Text, Card, Avatar, Chip } from 'react-native-paper';
@@ -7,7 +7,7 @@ import apiClient from '../../api/client';
 import { lightMapStyle, darkMapStyle } from '../../utils/mapStyle';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 const CATEGORIES = ['All', 'Food & Beverage', 'Clothing & Merch', 'Service Providers', 'Electronics'];
 
@@ -22,6 +22,7 @@ export default function MapScreen() {
   const { user } = useAuthStore();
   const currentMapStyle = theme.dark ? darkMapStyle : lightMapStyle;
 
+  // Get current user location once on mount
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -29,27 +30,34 @@ export default function MapScreen() {
 
       let loc = await Location.getCurrentPositionAsync({});
       setLocation(loc);
-
-      // Fetch vendors
-      try {
-        const response = await apiClient.get('/vendors');
-        setVendors(response.data);
-      } catch (error) {
-        console.error('Failed to fetch vendors:', error);
-      }
-
-      // Fetch user's favorites to show heart status
-      if (user?.role === 'CUSTOMER') {
-        try {
-          const favResponse = await apiClient.get('/favorites');
-          const ids = new Set(favResponse.data.map((fav: any) => fav.vendor_id));
-          setFavoriteIds(ids as Set<string>);
-        } catch (error) {
-          console.error('Failed to fetch favorites:', error);
-        }
-      }
     })();
-  }, [user]);
+  }, []);
+
+  // Fetch vendors and favorites dynamically on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const response = await apiClient.get('/vendors');
+          setVendors(response.data);
+        } catch (error) {
+          console.error('Failed to fetch vendors:', error);
+        }
+
+        if (user?.role === 'CUSTOMER') {
+          try {
+            const favResponse = await apiClient.get('/favorites');
+            const ids = new Set(favResponse.data.map((fav: any) => fav.vendor_id));
+            setFavoriteIds(ids as Set<string>);
+          } catch (error) {
+            console.error('Failed to fetch favorites:', error);
+          }
+        }
+      };
+
+      fetchData();
+    }, [user])
+  );
 
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||

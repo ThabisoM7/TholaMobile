@@ -7,6 +7,7 @@ const {
   updateVendor,
   getMyVendorProfile,
   getVendorAnalytics,
+  recordInteraction,
 } = require('../controllers/vendorController');
 const { protect, vendorOnly } = require('../middleware/authMiddleware');
 
@@ -14,6 +15,7 @@ router.route('/').get(getVendors);
 router.post('/register-business', protect, vendorOnly, registerBusiness);
 router.get('/me', protect, vendorOnly, getMyVendorProfile);
 router.get('/analytics', protect, vendorOnly, getVendorAnalytics);
+router.post('/interaction', protect, recordInteraction);
 router.route('/:id').get(getVendorById).put(protect, vendorOnly, updateVendor);
 
 module.exports = router;
