@@ -57,5 +57,18 @@ TholaaAppv1/
 4. Start the Expo development server: `npm start`
 5. Scan the QR code with the Expo Go app on your phone, or press `i` / `a` to open in an emulator.
 
+## 🆕 Version 1.2.5 - Vendor Console & Location Autocomplete Upgrades
+
+Version `v1.2.5` introduces a massive, premium overhaul to the vendor management portal, search autocomplete geocoding, and client-server synchronization:
+
+- **📍 Photon Autocomplete Search Pinner**: Replaced legacy OSM geocoding with a blazing-fast, debounced Photon Komoot geocoding system, preventing rate-limiting blocks and auto-populating townships/street addresses inside forms.
+- **💼 Dual-Option Launcher Console**: Re-engineered the "Manage Business" page into a sleek master dashboard launcher dividing operations into **Edit Business Profile** and **View Inventory / Catalog**.
+- **🖼️ Brand Assets (Logos & Covers)**: Enabled logo and 16:9 widescreen cover banner picks and uploads directly to Supabase storage, with direct Prisma DB integration.
+- **🗃️ Real-Time Navigation Focus Invalidation**: Swapped static page-load mounts with reactive `useFocusEffect` listeners on both the consumer **Map Page** and **Vendor Dashboard**, instantly rendering updates (like coordinates or deleted products) in real-time.
+
 ## 🏷️ Versioning
-This repository is marked as **V1**. You can return to this clean state at any time by checking out the `v1.0.0` tag in Git.
+
+- **v1.0.0**: Clean initial release state.
+- **v1.2.0**: Core vendor portal modifications.
+- **v1.2.5** (Current): Vendor dashboard menu, Photon geocoding autocomplete, Supabase brand asset uploading, and navigation sync.
+
