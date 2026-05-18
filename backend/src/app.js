@@ -10,6 +10,7 @@ const kycRoutes = require('./routes/kycRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
 const loyaltyRoutes = require('./routes/loyaltyRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/kyc', kycRoutes);
 app.use('/favorites', favoriteRoutes);
 app.use('/loyalty', loyaltyRoutes);
 app.use('/reviews', reviewRoutes);
+app.use('/promotions', promotionRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

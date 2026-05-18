@@ -126,4 +126,31 @@ To run both client and API in local development:
 
 ---
 
+## 🚀 Version 1.3.0 Release - Events & Promotions Feature Suite
+
+This release implements a robust, end-to-end township marketing micro-timeline within Thola. Vendors can now draft announcements ("quick tweets") and upload widescreen weekly flyer assets, which stream in real-time to township consumers via a segmented icon-based dual-panel profile.
+
+### 🌟 New Capabilities Added
+
+#### 1. 🗃️ Events & Promotions Relational Database Model
+*   **Supabase PostgreSQL Migration**: Registered `VendorPromotion` model mapping text contents (`content`) and optional S3-compatible Supabase media paths (`image_url`) linked via a foreign relation cascade to parent `Vendor` records.
+*   **Prisma Recompilation**: Re-compiled models and generated modern static types for the development workflow.
+
+#### 2. 💻 Secured REST Routing & Cascade Controllers
+*   **Authentication Protections**: Built explicit private POST/DELETE uploader routes locked strictly to validated `VENDOR` sessions, preventing identity spoofing.
+*   **Synchronous Profile Resolution**: Upgraded vendor details querying to automatically aggregate, sort, and resolve current promotion timeline arrays.
+
+#### 3. 📣 Vendor Events Portal & Flyer Canvas (`manage-business.tsx`)
+*   **Unified Workspace Launchpad**: Introduced an elegant **Events & Promotions** manager inside the Vendor Launcher panel.
+*   **Responsive Flyer Canvas Picker**: Crafted a dashed landscape flyer picker supporting widescreen uploader streams and clean asset erasure handlers.
+*   **Real-time Timeline Feeds**: Created an interactive micro-feed panel displaying the merchant's published updates with dynamic timestamp indicators and secure pop-up deletion alerts.
+
+#### 4. 🛒 Segmented Dual-Panel Customer View (`vendor/[id].tsx`)
+*   **Visual Ribbon Segment Bar**: Designed a premium, spring-loaded icon-based Segmented Tab menu splitting details into:
+    1.  **Products listings (🛒)**: The product catalog card grid.
+    2.  **Deals & News feed (📣)**: A beautiful social timeline showcasing the stall's updates and widescreen deal flyers.
+*   **Zero-State Graceful Degradation**: Integrated conversational prompt cards for stalls without active announcements.
+
+---
+
 *Log finalized on May 18, 2026.*

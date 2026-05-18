@@ -80,6 +80,11 @@ const getVendorById = async (req, res, next) => {
       where: { id: req.params.id },
       include: {
         products: true,
+        promotions: {
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
       },
     });
 

@@ -15,8 +15,8 @@ export default function ManageBusiness() {
   const { user } = useAuthStore();
   const { action } = useLocalSearchParams();
 
-  // Navigation / Views: 'menu' | 'profile' | 'inventory' | 'loyalty'
-  const [activeView, setActiveView] = useState<'menu' | 'profile' | 'inventory' | 'loyalty'>('menu');
+  // Navigation / Views: 'menu' | 'profile' | 'inventory' | 'loyalty' | 'promotions'
+  const [activeView, setActiveView] = useState<'menu' | 'profile' | 'inventory' | 'loyalty' | 'promotions'>('menu');
 
   // Loyalty Program State
   const [loyaltyStampsNeeded, setLoyaltyStampsNeeded] = useState('8');
@@ -63,6 +63,12 @@ export default function ManageBusiness() {
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchTimeout, setSearchTimeout] = useState<any>(null);
+
+  // Promotions / Announcements State
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [promotionContent, setPromotionContent] = useState('');
+  const [promotionImage, setPromotionImage] = useState<string | null>(null);
+  const [isPostingPromotion, setIsPostingPromotion] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -113,6 +119,14 @@ export default function ManageBusiness() {
         }
       } catch (err) {
         console.log('No active loyalty program setup yet.');
+      }
+
+      // Fetch active promotions
+      try {
+        const promoRes = await apiClient.get(`/promotions/vendor/${profile.id}`);
+        setPromotions(promoRes.data);
+      } catch (promoErr) {
+        console.log('Error fetching vendor promotions:', promoErr);
       }
     } catch (error) {
       console.error('Error fetching business/products:', error);
@@ -190,6 +204,74 @@ export default function ManageBusiness() {
     if (!result.canceled) {
       setBannerUri(result.assets[0].uri);
     }
+  };
+
+  const pickPromotionImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setPromotionImage(result.assets[0].uri);
+    }
+  };
+
+  const handlePostPromotion = async () => {
+    if (!promotionContent.trim()) {
+      Alert.alert('Error', 'Please write some text content for your update/offering.');
+      return;
+    }
+
+    try {
+      setIsPostingPromotion(true);
+      let uploadedUrl = null;
+
+      if (promotionImage) {
+        uploadedUrl = await uploadImage(promotionImage, 'Products');
+      }
+
+      await apiClient.post('/promotions', {
+        content: promotionContent,
+        image_url: uploadedUrl
+      });
+
+      Alert.alert('Success', 'Announcement posted successfully!');
+      setPromotionContent('');
+      setPromotionImage(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error posting promotion:', error);
+      Alert.alert('Error', 'Could not post announcement. Please try again.');
+    } finally {
+      setIsPostingPromotion(false);
+    }
+  };
+
+  const handleDeletePromotion = async (id: string) => {
+    Alert.alert(
+      'Delete Announcement',
+      'Are you sure you want to delete this promotion/deal post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.delete(`/promotions/${id}`);
+              Alert.alert('Deleted', 'Announcement deleted successfully.');
+              fetchData();
+            } catch (error) {
+              console.error('Error deleting promotion:', error);
+              Alert.alert('Error', 'Could not delete promotion.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Autocomplete Location Handlers
@@ -732,6 +814,32 @@ export default function ManageBusiness() {
                     </Card.Content>
                   </Card>
                 </TouchableScale>
+
+                <TouchableScale onPress={() => setActiveView('promotions')}>
+                  <Card 
+                    style={[
+                      styles.menuCard, 
+                      { 
+                        backgroundColor: theme.colors.surface, 
+                        borderColor: theme.dark ? '#333' : '#eee',
+                        marginTop: 16
+                      }
+                    ]} 
+                    mode="outlined"
+                  >
+                    <Card.Content style={styles.menuCardContent}>
+                      <IconButton icon="bullhorn-outline" size={40} iconColor={theme.colors.primary} />
+                      <View style={styles.menuCardText}>
+                        <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                          Events & Promotions
+                        </Text>
+                        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                          Post latest updates, tweet-style announcements, and upload weekly deal flyer pictures.
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </TouchableScale>
               </ScrollView>
             </View>
           )}
@@ -1002,6 +1110,185 @@ export default function ManageBusiness() {
                   onPress={() => setActiveView('menu')}
                   disabled={savingLoyalty}
                   style={{ marginTop: 16 }}
+                >
+                  Back to Menu
+                </Button>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          )}
+
+          {/* VIEW 5: EVENTS & PROMOTIONS PANEL */}
+          {activeView === 'promotions' && (
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex: 1 }}
+            >
+              <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+                
+                <Card 
+                  style={[
+                    styles.menuCard, 
+                    { 
+                      backgroundColor: theme.colors.elevation.level1, 
+                      borderColor: theme.dark ? '#333' : '#eee',
+                      marginBottom: 16
+                    }
+                  ]}
+                  mode="outlined"
+                >
+                  <Card.Content style={{ paddingVertical: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <IconButton icon="bullhorn-variant" size={32} iconColor={theme.colors.primary} style={{ margin: 0 }} />
+                      <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginLeft: 8 }}>
+                        Live Shop Updates & Flyers
+                      </Text>
+                    </View>
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8 }}>
+                      Keep your township customers informed! Post quick tweets about new arrivals, or upload high-impact flyer images showcasing weekly special deals.
+                    </Text>
+                  </Card.Content>
+                </Card>
+
+                {/* Create Promotion Form */}
+                <Card 
+                  style={{ 
+                    backgroundColor: theme.colors.surface, 
+                    borderColor: theme.dark ? '#333' : '#eee',
+                    marginBottom: 24
+                  }} 
+                  mode="outlined"
+                >
+                  <Card.Content style={{ gap: 16 }}>
+                    <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                      Post a New Update
+                    </Text>
+
+                    <TextInput
+                      label="Announcement Content"
+                      value={promotionContent}
+                      onChangeText={setPromotionContent}
+                      style={styles.input}
+                      mode="outlined"
+                      multiline
+                      numberOfLines={4}
+                      placeholder="e.g. Fresh batch of township magwinya (fat cakes) just came out of the oil! Come grab yours while they are smoking hot! 🔥"
+                    />
+
+                    {/* Optional flyer upload */}
+                    <TouchableOpacity onPress={pickPromotionImage} style={{ marginTop: 8 }}>
+                      <View style={[
+                        styles.bannerUploadPlaceholder, 
+                        { 
+                          borderColor: theme.colors.primary, 
+                          backgroundColor: theme.dark ? '#222' : '#f9f9f9',
+                          height: 140,
+                          borderRadius: 8,
+                          borderStyle: 'dashed',
+                          borderWidth: 1.5,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden'
+                        }
+                      ]}>
+                        {promotionImage ? (
+                          <Image source={{ uri: promotionImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                        ) : (
+                          <View style={{ alignItems: 'center' }}>
+                            <IconButton icon="image-plus" size={32} iconColor={theme.colors.primary} />
+                            <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                              Add Flyer / Deal Photo
+                            </Text>
+                            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                              Optional (Landscape 16:9 recommended)
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+
+                    {promotionImage && (
+                      <Button 
+                        mode="outlined" 
+                        onPress={() => setPromotionImage(null)} 
+                        icon="image-off"
+                        textColor={theme.colors.error}
+                        style={{ borderColor: theme.colors.error }}
+                      >
+                        Remove Selected Image
+                      </Button>
+                    )}
+
+                    <Button 
+                      mode="contained" 
+                      onPress={handlePostPromotion} 
+                      loading={isPostingPromotion}
+                      disabled={isPostingPromotion}
+                      style={[styles.submitBtn, { marginTop: 8 }]}
+                    >
+                      Publish to Profile Feed
+                    </Button>
+                  </Card.Content>
+                </Card>
+
+                {/* List of Existing Updates */}
+                <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginBottom: 12 }}>
+                  Your Published Feed ({promotions.length})
+                </Text>
+
+                {promotions.length === 0 ? (
+                  <View style={{ padding: 24, alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: 8, borderWidth: 1, borderColor: theme.dark ? '#333' : '#eee', marginBottom: 24 }}>
+                    <IconButton icon="message-bulleted-off" size={40} iconColor={theme.colors.onSurfaceVariant} />
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }}>
+                      You haven't posted any updates or weekly flyers yet. Start by writing one above!
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: 12, marginBottom: 24 }}>
+                    {promotions.map((item: any) => (
+                      <Card 
+                        key={item.id} 
+                        style={{ 
+                          backgroundColor: theme.colors.surface, 
+                          borderColor: theme.dark ? '#333' : '#eee' 
+                        }} 
+                        mode="outlined"
+                      >
+                        <Card.Content>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                              {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                            <IconButton 
+                              icon="trash-can-outline" 
+                              size={20} 
+                              iconColor={theme.colors.error} 
+                              style={{ margin: 0, padding: 0 }}
+                              onPress={() => handleDeletePromotion(item.id)} 
+                            />
+                          </View>
+                          
+                          <Text variant="bodyLarge" style={{ color: theme.colors.onSurface, marginTop: 8, lineHeight: 20 }}>
+                            {item.content}
+                          </Text>
+
+                          {item.image_url && (
+                            <Image 
+                              source={{ uri: item.image_url }} 
+                              style={{ width: '100%', height: 160, borderRadius: 6, marginTop: 12 }} 
+                              resizeMode="cover"
+                            />
+                          )}
+                        </Card.Content>
+                      </Card>
+                    ))}
+                  </View>
+                )}
+
+                <Button 
+                  mode="text" 
+                  onPress={() => setActiveView('menu')}
+                  disabled={isPostingPromotion}
+                  style={{ marginBottom: 24 }}
                 >
                   Back to Menu
                 </Button>

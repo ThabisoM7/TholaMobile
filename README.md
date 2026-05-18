@@ -57,28 +57,16 @@ TholaaAppv1/
 4. Start the Expo development server: `npm start`
 5. Scan the QR code with the Expo Go app on your phone, or press `i` / `a` to open in an emulator.
 
-## 🆕 Version 1.2.5 - Vendor Console & Location Autocomplete Upgrades
+## 🆕 Version 1.5.0 - Vendor Events & Promotions System (Latest Release)
 
-Version `v1.2.5` introduces a massive, premium overhaul to the vendor management portal, search autocomplete geocoding, and client-server synchronization:
+Version `v1.5.0` introduces a complete, high-fidelity township marketing feed and timeline system inside Thola, enabling vendors to share updates and widescreen promotional deal flyers:
 
-- **📍 Photon Autocomplete Search Pinner**: Replaced legacy OSM geocoding with a blazing-fast, debounced Photon Komoot geocoding system, preventing rate-limiting blocks and auto-populating townships/street addresses inside forms.
-- **💼 Dual-Option Launcher Console**: Re-engineered the "Manage Business" page into a sleek master dashboard launcher dividing operations into **Edit Business Profile** and **View Inventory / Catalog**.
-- **🖼️ Brand Assets (Logos & Covers)**: Enabled logo and 16:9 widescreen cover banner picks and uploads directly to Supabase storage, with direct Prisma DB integration.
-- **🗃️ Real-Time Navigation Focus Invalidation**: Swapped static page-load mounts with reactive `useFocusEffect` listeners on both the consumer **Map Page** and **Vendor Dashboard**, instantly rendering updates (like coordinates or deleted products) in real-time.
+- **📣 Events & Promotions Relational Database Integration**: Engineered the database migration (`schema.prisma`) mapping the `VendorPromotion` table to parent `Vendor` records in Supabase Postgres, supporting cascade deletions.
+- **💻 Authenticated Route Guards**: Created private write routes (authenticated POST and DELETE methods) locked securely to authorized `VENDOR` accounts, alongside public feed resolving controllers.
+- **🎨 Merchant Events Dashboard Console (`manage-business.tsx`)**: Created a dedicated launcher card to open the Promotions Workspace, featuring a dashed landscape flyer asset picker, uploader flows, and real-time deletion safety prompts.
+- **🛒 Segmented Dual-Panel Customer View (`vendor/[id].tsx`)**: Engineered a premium, spring-loaded icon segmented button tab bar dividing details into:
+  1. **Products listings (🛒)**: The catalog card grid.
+  2. **Deals & News feed (📣)**: A social-style chronological timeline feed presenting merchant announcement cards and widescreen special deal flyers.
+- **🛡️ DevSecOps Security Blueprint**: Established a production security logging, monitoring, and source-code analysis checklist mapped against OWASP Mobile and Web Top 10 guidelines.
 
-## 🆕 Version 1.3.0 - Micro-Loyalty & Product Ratings & Reviews Systems
-
-Version `v1.3.0` introduces a secure Micro-Loyalty Stamp Cards system, a high-fidelity Product Ratings & Reviews engine, and multiple premium UI enhancements:
-
-- **🎫 Micro-Loyalty QR Code Stamp Cards**: Enables vendors to set stamp goals (e.g., 8 stamps) and customize reward descriptions. Customers scan signed, time-locked, dynamic QR codes to earn golden star stamps. Built with instant redemption triggers, camera scan overlays, vibration feedback, and strict cooling-off windows to block stamp-farming.
-- **⭐️ Product Ratings & Reviews System**: Allows customers to leave 1-to-5-star ratings and written reviews on listings directly via a bottom details modal on the vendor profile. Built with a robust database upsert model, preventing duplication and restricting input solely to verified customers.
-- **🔔 Customer Reviews Alert Center**: Feeds ratings and comment notifications directly onto the vendor's Analytics & Notifications page under a custom alerts feed showing stars and reviewer details.
-- **📐 Layout & Safe-Area Polishing**: Upgraded notches and safe area layout pads on the Stamps cards view, preventing top-bar overlaps on iOS. Lifted the Scan FAB to float cleanly above the absolute bottom navigation bar and swapped nested portals with direct view layouts to guarantee 100% video camera preview reliability.
-
-## 🏷️ Versioning
-
-- **v1.0.0**: Clean initial release state.
-- **v1.2.0**: Core vendor portal modifications.
-- **v1.2.5**: Vendor dashboard menu, Photon geocoding autocomplete, Supabase brand asset uploading, and navigation sync.
-- **v1.3.0** (Current): Micro-Loyalty QR Code Stamp Cards, Product Ratings & Reviews, Vendor Alerts feed, safe-area layout fixes, and direct camera swap views.
 
