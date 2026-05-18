@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import { Text, Card, useTheme, ActivityIndicator, IconButton, Avatar, List, Divider } from 'react-native-paper';
 import { router } from 'expo-router';
 import apiClient from '../../api/client';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Analytics() {
   const theme = useTheme();
@@ -104,6 +105,65 @@ export default function Analytics() {
           ) : (
             <View style={styles.emptyState}>
               <Text variant="bodyMedium">No recent activity found.</Text>
+            </View>
+          )}
+        </Card>
+
+        <Text variant="titleLarge" style={styles.sectionTitle}>Customer Reviews Alert Center</Text>
+
+        <Card style={styles.activityCard}>
+          {stats?.productReviews?.length > 0 ? (
+            stats.productReviews.map((item: any, index: number) => (
+              <View key={item.id}>
+                <List.Item
+                  title={`${item.user.full_name} reviewed "${item.product.name}"`}
+                  titleStyle={{ fontWeight: 'bold' }}
+                  description={
+                    <View style={{ marginTop: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <MaterialCommunityIcons
+                            key={star}
+                            name={star <= item.rating ? "star" : "star-outline"}
+                            size={16}
+                            color="#FBC02D"
+                            style={{ marginRight: 2 }}
+                          />
+                        ))}
+                        <Text variant="bodySmall" style={{ color: '#666', marginLeft: 8 }}>
+                          {item.rating} / 5
+                        </Text>
+                      </View>
+                      {item.comment && (
+                        <Text variant="bodyMedium" style={{ color: '#333', fontStyle: 'italic', marginVertical: 4 }}>
+                          "{item.comment}"
+                        </Text>
+                      )}
+                      <Text variant="bodySmall" style={{ color: '#999', fontSize: 10 }}>
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  }
+                  left={props => (
+                    <Avatar.Icon 
+                      {...props} 
+                      icon="comment-text-multiple" 
+                      size={40} 
+                      style={{ backgroundColor: '#FBC02D' }} 
+                    />
+                  )}
+                />
+                {index < stats.productReviews.length - 1 && <Divider />}
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="comment-text-multiple-outline" size={32} color="#ccc" />
+                <Text variant="bodyMedium" style={{ color: '#888', marginTop: 8 }}>
+                  No listing reviews or comments yet.
+                </Text>
+              </View>
             </View>
           )}
         </Card>

@@ -8,6 +8,8 @@ const vendorRoutes = require('./routes/vendorRoutes');
 const productRoutes = require('./routes/productRoutes');
 const kycRoutes = require('./routes/kycRoutes');
 const favoriteRoutes = require('./routes/favoriteRoutes');
+const loyaltyRoutes = require('./routes/loyaltyRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use('/vendors', vendorRoutes);
 app.use('/products', productRoutes);
 app.use('/kyc', kycRoutes);
 app.use('/favorites', favoriteRoutes);
+app.use('/loyalty', loyaltyRoutes);
+app.use('/reviews', reviewRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

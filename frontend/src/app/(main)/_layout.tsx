@@ -16,6 +16,7 @@ export default function MainLayout() {
         <Stack.Screen name="edit-profile" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="help-support" />
+        <Stack.Screen name="loyalty" />
       </Stack>
       <BottomNav />
     </View>

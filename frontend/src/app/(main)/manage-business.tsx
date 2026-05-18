@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Text, Button, Card, TextInput, FAB, Portal, Modal, useTheme, IconButton, ActivityIndicator } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import MapView, { Marker } from 'react-native-maps';
@@ -15,8 +15,15 @@ export default function ManageBusiness() {
   const { user } = useAuthStore();
   const { action } = useLocalSearchParams();
 
-  // Navigation / Views: 'menu' | 'profile' | 'inventory'
-  const [activeView, setActiveView] = useState<'menu' | 'profile' | 'inventory'>('menu');
+  // Navigation / Views: 'menu' | 'profile' | 'inventory' | 'loyalty'
+  const [activeView, setActiveView] = useState<'menu' | 'profile' | 'inventory' | 'loyalty'>('menu');
+
+  // Loyalty Program State
+  const [loyaltyStampsNeeded, setLoyaltyStampsNeeded] = useState('8');
+  const [loyaltyRewardDesc, setLoyaltyRewardDesc] = useState('');
+  const [loyaltyQrPayload, setLoyaltyQrPayload] = useState<string | null>(null);
+  const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [savingLoyalty, setSavingLoyalty] = useState(false);
 
   // Vendor Profile State
   const [vendorProfile, setVendorProfile] = useState<any>(null);
@@ -90,10 +97,58 @@ export default function ManageBusiness() {
       // Fetch products
       const productsRes = await apiClient.get(`/products/vendor/${profile.id}`);
       setProducts(productsRes.data);
+
+      // Fetch active loyalty program configuration
+      try {
+        const loyaltyRes = await apiClient.get('/loyalty/program/me');
+        if (loyaltyRes.data) {
+          setLoyaltyStampsNeeded(String(loyaltyRes.data.stamps_needed || 8));
+          setLoyaltyRewardDesc(loyaltyRes.data.reward_description || '');
+          
+          // Fetch cryptographically signed daily QR payload string
+          const qrRes = await apiClient.get('/loyalty/qr');
+          if (qrRes.data && qrRes.data.qrPayload) {
+            setLoyaltyQrPayload(qrRes.data.qrPayload);
+          }
+        }
+      } catch (err) {
+        console.log('No active loyalty program setup yet.');
+      }
     } catch (error) {
       console.error('Error fetching business/products:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveLoyaltyProgram = async () => {
+    if (!loyaltyStampsNeeded || isNaN(parseInt(loyaltyStampsNeeded))) {
+      Alert.alert('Error', 'Please enter a valid number of stamps.');
+      return;
+    }
+    if (!loyaltyRewardDesc) {
+      Alert.alert('Error', 'Please describe the loyalty reward.');
+      return;
+    }
+
+    try {
+      setSavingLoyalty(true);
+      await apiClient.post('/loyalty/setup', {
+        stamps_needed: parseInt(loyaltyStampsNeeded),
+        reward_description: loyaltyRewardDesc
+      });
+      Alert.alert('Success', 'Loyalty program configured successfully!');
+      
+      // Fetch daily rotating cryptographically signed barcode payload
+      const qrRes = await apiClient.get('/loyalty/qr');
+      if (qrRes.data && qrRes.data.qrPayload) {
+        setLoyaltyQrPayload(qrRes.data.qrPayload);
+      }
+    } catch (error: any) {
+      console.error('Error setting up loyalty:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to save loyalty settings.');
+    } finally {
+      setSavingLoyalty(false);
     }
   };
 
@@ -334,38 +389,220 @@ export default function ManageBusiness() {
     setProductInStock(true);
   };
 
-  // Rendering Helper Sub-Views
-  const renderProductItem = ({ item }: { item: any }) => (
-    <Card style={[styles.card, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]} mode="outlined">
-      <View style={styles.cardContent}>
-        <Image 
-          source={item.image_url ? { uri: item.image_url } : require('../../../assets/icon.png')} 
-          style={styles.productImage} 
-        />
-        <View style={styles.productInfo}>
-          <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{item.name}</Text>
-          <Text variant="bodySmall" style={{ color: theme.dark ? '#AAA' : '#666' }} numberOfLines={2}>{item.description}</Text>
-          <View style={styles.priceRow}>
-            <Text variant="labelLarge" style={[styles.price, { color: theme.colors.primary }]}>R {item.price}</Text>
-            <View style={[styles.stockBadge, { backgroundColor: item.in_stock ? '#E8F5E9' : '#FFEBEE' }]}>
-              <Text style={[styles.stockText, { color: item.in_stock ? '#2E7D32' : '#C62828' }]}>
-                {item.in_stock ? 'IN STOCK' : 'OUT OF STOCK'}
-              </Text>
+  const SkeletonProductItem = () => {
+    const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(animatedValue, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animatedValue, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, [animatedValue]);
+
+    const opacity = animatedValue.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.7],
+    });
+
+    return (
+      <Card 
+        style={[
+          styles.card, 
+          { 
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.dark ? '#333' : '#eee'
+          }
+        ]} 
+        mode="outlined"
+      >
+        <View style={styles.cardContent}>
+          <Animated.View 
+            style={[
+              styles.productImage, 
+              { 
+                backgroundColor: theme.dark ? '#333' : '#e0e0e0',
+                opacity 
+              }
+            ]} 
+          />
+          <View style={styles.productInfo}>
+            <Animated.View 
+              style={[
+                { 
+                  height: 16, 
+                  width: '60%', 
+                  borderRadius: 4, 
+                  backgroundColor: theme.dark ? '#333' : '#e0e0e0',
+                  marginBottom: 8,
+                  opacity 
+                }
+              ]} 
+            />
+            <Animated.View 
+              style={[
+                { 
+                  height: 12, 
+                  width: '80%', 
+                  borderRadius: 4, 
+                  backgroundColor: theme.dark ? '#333' : '#e0e0e0',
+                  marginBottom: 12,
+                  opacity 
+                }
+              ]} 
+            />
+            <View style={styles.priceRow}>
+              <Animated.View 
+                style={[
+                  { 
+                    height: 14, 
+                    width: '30%', 
+                    borderRadius: 4, 
+                    backgroundColor: theme.dark ? '#333' : '#e0e0e0',
+                    opacity 
+                  }
+                ]} 
+              />
             </View>
           </View>
         </View>
-        <IconButton 
-          icon={item.in_stock ? "check-circle" : "close-circle"} 
-          iconColor={item.in_stock ? theme.colors.primary : "#757575"} 
-          onPress={() => toggleStock(item.id, !item.in_stock)}
-        />
-        <IconButton 
-          icon="delete-outline" 
-          iconColor={theme.colors.error} 
-          onPress={() => handleDeleteProduct(item.id)}
-        />
+      </Card>
+    );
+  };
+
+  const EmptyCatalog = () => {
+    const floatAnim = React.useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(floatAnim, {
+            toValue: -10,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(floatAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, [floatAnim]);
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Animated.View style={{ transform: [{ translateY: floatAnim }], marginBottom: 16 }}>
+          <IconButton 
+            icon="package-variant" 
+            size={80} 
+            iconColor={theme.colors.onSurfaceVariant} 
+            style={{ opacity: 0.8 }}
+          />
+        </Animated.View>
+        <Text variant="headlineSmall" style={{ fontWeight: 'bold', color: theme.colors.onSurface, textAlign: 'center', marginBottom: 8 }}>
+          Your Catalog is Fresh & Ready!
+        </Text>
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginHorizontal: 32, marginBottom: 24 }}>
+          Add your premium products here so customers browsing the local Township discovery map can find and buy from you.
+        </Text>
+        <Button 
+          mode="contained" 
+          icon="plus" 
+          onPress={() => setModalVisible(true)}
+          contentStyle={{ paddingHorizontal: 16, paddingVertical: 4 }}
+          style={{ borderRadius: 20 }}
+        >
+          Post Your First Product
+        </Button>
       </View>
-    </Card>
+    );
+  };
+
+  const TouchableScale = ({ onPress, children, style }: { onPress: () => void, children: React.ReactNode, style?: any }) => {
+    const scaleValue = React.useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+      Animated.spring(scaleValue, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <TouchableWithoutFeedback
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <Animated.View style={[{ transform: [{ scale: scaleValue }] }, style]}>
+          {children}
+        </Animated.View>
+      </TouchableWithoutFeedback>
+    );
+  };
+
+  // Rendering Helper Sub-Views
+  const renderProductItem = ({ item }: { item: any }) => (
+    <TouchableScale onPress={() => toggleStock(item.id, !item.in_stock)}>
+      <Card 
+        style={[
+          styles.card, 
+          { 
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.dark ? '#333' : '#eee'
+          }
+        ]} 
+        mode="outlined"
+      >
+        <View style={styles.cardContent}>
+          <Image 
+            source={item.image_url ? { uri: item.image_url } : require('../../../assets/icon.png')} 
+            style={styles.productImage} 
+          />
+          <View style={styles.productInfo}>
+            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{item.name}</Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={2}>{item.description}</Text>
+            <View style={styles.priceRow}>
+              <Text variant="labelLarge" style={[styles.price, { color: theme.colors.primary }]}>R {item.price}</Text>
+              <View style={[styles.stockBadge, { backgroundColor: item.in_stock ? '#E8F5E9' : '#FFEBEE' }]}>
+                <Text style={[styles.stockText, { color: item.in_stock ? '#2E7D32' : '#C62828' }]}>
+                  {item.in_stock ? 'IN STOCK' : 'OUT OF STOCK'}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <IconButton 
+            icon={item.in_stock ? "check-circle" : "close-circle"} 
+            iconColor={item.in_stock ? theme.colors.primary : "#757575"} 
+            onPress={() => toggleStock(item.id, !item.in_stock)}
+          />
+          <IconButton 
+            icon="delete-outline" 
+            iconColor={theme.colors.error} 
+            onPress={() => handleDeleteProduct(item.id)}
+          />
+        </View>
+      </Card>
+    </TouchableScale>
   );
 
   return (
@@ -388,10 +625,11 @@ export default function ManageBusiness() {
           {activeView === 'menu' && "Manage Business"}
           {activeView === 'profile' && "Edit Profile"}
           {activeView === 'inventory' && "Product Catalog"}
+          {activeView === 'loyalty' && "Configure Loyalty"}
         </Text>
       </View>
 
-      {loading ? (
+      {loading && activeView !== 'inventory' ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -404,7 +642,7 @@ export default function ManageBusiness() {
                 <Image source={{ uri: vendorProfile.banner_url }} style={styles.dashboardBanner} />
               )}
               
-              <View style={styles.dashboardHero}>
+              <View style={[styles.dashboardHero, { borderBottomColor: theme.dark ? '#333' : '#eee' }]}>
                 <Image 
                   source={vendorProfile?.logo_url ? { uri: vendorProfile.logo_url } : require('../../../assets/icon.png')} 
                   style={styles.dashboardLogo} 
@@ -413,48 +651,87 @@ export default function ManageBusiness() {
                   <Text variant="headlineSmall" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
                     {vendorProfile?.business_name}
                   </Text>
-                  <Text variant="bodyMedium" style={{ color: theme.dark ? '#AAA' : '#666' }}>
+                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                     {vendorProfile?.category} • {vendorProfile?.township}
                   </Text>
                 </View>
               </View>
 
               <ScrollView contentContainerStyle={styles.launcherMenu}>
-                <Card 
-                  style={[styles.menuCard, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]} 
-                  onPress={() => setActiveView('profile')}
-                  mode="outlined"
-                >
-                  <Card.Content style={styles.menuCardContent}>
-                    <IconButton icon="store-cog" size={40} iconColor={theme.colors.primary} />
-                    <View style={styles.menuCardText}>
-                      <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
-                        Edit Business Profile
-                      </Text>
-                      <Text variant="bodyMedium" style={{ color: theme.dark ? '#AAA' : '#666', marginTop: 4 }}>
-                        Change location, description, phone numbers, logo, and cover photo banner.
-                      </Text>
-                    </View>
-                  </Card.Content>
-                </Card>
+                <TouchableScale onPress={() => setActiveView('profile')}>
+                  <Card 
+                    style={[
+                      styles.menuCard, 
+                      { 
+                        backgroundColor: theme.colors.surface, 
+                        borderColor: theme.dark ? '#333' : '#eee' 
+                      }
+                    ]} 
+                    mode="outlined"
+                  >
+                    <Card.Content style={styles.menuCardContent}>
+                      <IconButton icon="store-cog" size={40} iconColor={theme.colors.primary} />
+                      <View style={styles.menuCardText}>
+                        <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                          Edit Business Profile
+                        </Text>
+                        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                          Change location, description, phone numbers, logo, and cover photo banner.
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </TouchableScale>
 
-                <Card 
-                  style={[styles.menuCard, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]} 
-                  onPress={() => setActiveView('inventory')}
-                  mode="outlined"
-                >
-                  <Card.Content style={styles.menuCardContent}>
-                    <IconButton icon="package-variant-closed" size={40} iconColor={theme.colors.primary} />
-                    <View style={styles.menuCardText}>
-                      <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
-                        View Inventory / Catalog
-                      </Text>
-                      <Text variant="bodyMedium" style={{ color: theme.dark ? '#AAA' : '#666', marginTop: 4 }}>
-                        Manage product items, prices, descriptions, and toggle stock availability.
-                      </Text>
-                    </View>
-                  </Card.Content>
-                </Card>
+                <TouchableScale onPress={() => setActiveView('inventory')}>
+                  <Card 
+                    style={[
+                      styles.menuCard, 
+                      { 
+                        backgroundColor: theme.colors.surface, 
+                        borderColor: theme.dark ? '#333' : '#eee' 
+                      }
+                    ]} 
+                    mode="outlined"
+                  >
+                    <Card.Content style={styles.menuCardContent}>
+                      <IconButton icon="package-variant-closed" size={40} iconColor={theme.colors.primary} />
+                      <View style={styles.menuCardText}>
+                        <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                          View Inventory / Catalog
+                        </Text>
+                        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                          Manage product items, prices, descriptions, and toggle stock availability.
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </TouchableScale>
+
+                <TouchableScale onPress={() => setActiveView('loyalty')}>
+                  <Card 
+                    style={[
+                      styles.menuCard, 
+                      { 
+                        backgroundColor: theme.colors.surface, 
+                        borderColor: theme.dark ? '#333' : '#eee' 
+                      }
+                    ]} 
+                    mode="outlined"
+                  >
+                    <Card.Content style={styles.menuCardContent}>
+                      <IconButton icon="ticket-confirmation-outline" size={40} iconColor={theme.colors.primary} />
+                      <View style={styles.menuCardText}>
+                        <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                          Configure Loyalty Cards
+                        </Text>
+                        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                          Set stamps limits, configure repeat rewards, and generate your dynamic shop QR code.
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </TouchableScale>
               </ScrollView>
             </View>
           )}
@@ -468,7 +745,16 @@ export default function ManageBusiness() {
               <ScrollView contentContainerStyle={styles.formScroll}>
                 
                 <Text variant="titleMedium" style={[styles.sectionLabel, { color: theme.colors.onSurface }]}>Business Banner / Cover</Text>
-                <TouchableOpacity style={styles.bannerPicker} onPress={pickBannerImage}>
+                <TouchableOpacity 
+                  style={[
+                    styles.bannerPicker, 
+                    { 
+                      backgroundColor: theme.dark ? theme.colors.elevation.level1 : '#f5f5f5',
+                      borderColor: theme.dark ? '#444' : '#ddd'
+                    }
+                  ]} 
+                  onPress={pickBannerImage}
+                >
                   {bannerUri ? (
                     <Image source={{ uri: bannerUri }} style={styles.pickedBanner} />
                   ) : (
@@ -480,7 +766,16 @@ export default function ManageBusiness() {
                 </TouchableOpacity>
 
                 <View style={styles.logoAndHeaderRow}>
-                  <TouchableOpacity style={styles.logoPicker} onPress={pickLogoImage}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.logoPicker, 
+                      { 
+                        backgroundColor: theme.dark ? theme.colors.elevation.level1 : '#f5f5f5',
+                        borderColor: theme.dark ? '#444' : '#ddd'
+                      }
+                    ]} 
+                    onPress={pickLogoImage}
+                  >
                     {logoUri ? (
                       <Image source={{ uri: logoUri }} style={styles.pickedLogo} />
                     ) : (
@@ -492,7 +787,7 @@ export default function ManageBusiness() {
                   </TouchableOpacity>
                   <View style={{ flex: 1, marginLeft: 16 }}>
                     <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Business Brand</Text>
-                    <Text variant="bodySmall" style={{ color: theme.dark ? '#AAA' : '#666' }}>Tap banner or circle to upload your business imagery.</Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Tap banner or circle to upload your business imagery.</Text>
                   </View>
                 </View>
 
@@ -535,11 +830,19 @@ export default function ManageBusiness() {
                 {/* Autocomplete Map Trigger Section */}
                 <View style={styles.locationSection}>
                   <Text variant="titleMedium" style={[styles.sectionLabel, { marginBottom: 8, color: theme.colors.onSurface }]}>Location on Map</Text>
-                  <View style={[styles.locationPreview, { backgroundColor: theme.dark ? '#222' : '#F8F9FA' }]}>
+                  <View 
+                    style={[
+                      styles.locationPreview, 
+                      { 
+                        backgroundColor: theme.dark ? theme.colors.elevation.level1 : '#F8F9FA',
+                        borderColor: theme.dark ? '#333' : '#eee'
+                      }
+                    ]}
+                  >
                     <View style={{ flex: 1 }}>
                       <Text variant="bodyMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Township Set:</Text>
                       <Text variant="bodySmall" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>{bizTownship || "Not set"}</Text>
-                      <Text variant="bodySmall" style={{ color: theme.dark ? '#AAA' : '#666', marginTop: 4 }} numberOfLines={1}>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }} numberOfLines={1}>
                         {bizAddress || "No address pinned"}
                       </Text>
                     </View>
@@ -577,18 +880,24 @@ export default function ManageBusiness() {
           {/* VIEW 3: INVENTORY LIST VIEW */}
           {activeView === 'inventory' && (
             <>
-              <FlatList
-                data={products}
-                keyExtractor={(item: any) => item.id}
-                renderItem={renderProductItem}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>Your catalog is empty.</Text>
-                    <Text variant="bodyMedium" style={{ color: theme.dark ? '#AAA' : '#666' }}>Add products to start selling!</Text>
-                  </View>
-                }
-              />
+              {loading ? (
+                <FlatList
+                  data={[1, 2, 3, 4]}
+                  keyExtractor={(item) => item.toString()}
+                  renderItem={() => <SkeletonProductItem />}
+                  contentContainerStyle={styles.list}
+                  showsVerticalScrollIndicator={false}
+                />
+              ) : (
+                <FlatList
+                  data={products}
+                  keyExtractor={(item: any) => item.id}
+                  renderItem={renderProductItem}
+                  contentContainerStyle={styles.list}
+                  ListEmptyComponent={<EmptyCatalog />}
+                  showsVerticalScrollIndicator={false}
+                />
+              )}
 
               <FAB
                 icon="plus"
@@ -600,6 +909,106 @@ export default function ManageBusiness() {
             </>
           )}
 
+          {/* VIEW 4: CONFIGURE LOYALTY CARDS */}
+          {activeView === 'loyalty' && (
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex: 1 }}
+            >
+              <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+                
+                <Card 
+                  style={[
+                    styles.menuCard, 
+                    { 
+                      backgroundColor: theme.colors.elevation.level1, 
+                      borderColor: theme.dark ? '#333' : '#eee',
+                      marginBottom: 16
+                    }
+                  ]}
+                  mode="outlined"
+                >
+                  <Card.Content style={{ alignItems: 'center', paddingVertical: 16 }}>
+                    <IconButton icon="qrcode-scan" size={48} iconColor={theme.colors.primary} />
+                    <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, textAlign: 'center' }}>
+                      Loyalty Stamp Settings
+                    </Text>
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }}>
+                      Configure how many stamp purchases customers need to claim a free loyalty reward at your stall.
+                    </Text>
+                  </Card.Content>
+                </Card>
+
+                <TextInput
+                  label="Stamps Needed for Reward"
+                  value={loyaltyStampsNeeded}
+                  onChangeText={setLoyaltyStampsNeeded}
+                  keyboardType="numeric"
+                  style={styles.input}
+                  mode="outlined"
+                  placeholder="e.g. 8"
+                />
+
+                <TextInput
+                  label="Reward Description"
+                  value={loyaltyRewardDesc}
+                  onChangeText={setLoyaltyRewardDesc}
+                  style={styles.input}
+                  mode="outlined"
+                  multiline
+                  numberOfLines={3}
+                  placeholder="e.g. Get a free coffee, or a warm township fat cake (magwinya) on your 8th buy!"
+                />
+
+                <Button 
+                  mode="contained" 
+                  onPress={handleSaveLoyaltyProgram} 
+                  loading={savingLoyalty}
+                  disabled={savingLoyalty}
+                  style={styles.submitBtn}
+                >
+                  Save Program Settings
+                </Button>
+
+                {loyaltyQrPayload && (
+                  <Card 
+                    style={[
+                      styles.menuCard, 
+                      { 
+                        backgroundColor: '#FFFFFF', 
+                        borderColor: '#eee',
+                        marginTop: 24,
+                        paddingVertical: 16,
+                        alignItems: 'center'
+                      }
+                    ]}
+                    mode="outlined"
+                  >
+                    <Text variant="titleMedium" style={{ fontWeight: 'bold', color: '#000000', marginBottom: 12 }}>
+                      Your Live Shop QR Stamp
+                    </Text>
+                    <Image 
+                      source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(loyaltyQrPayload)}` }} 
+                      style={{ width: 220, height: 220, borderRadius: 8 }} 
+                    />
+                    <Text variant="bodySmall" style={{ color: '#666666', textAlign: 'center', marginTop: 12, marginHorizontal: 16 }}>
+                      Customers scan this via their Thola mobile app to log purchases. Signature expires daily to prevent cloning fraud.
+                    </Text>
+                  </Card>
+                )}
+
+                <Button 
+                  mode="text" 
+                  onPress={() => setActiveView('menu')}
+                  disabled={savingLoyalty}
+                  style={{ marginTop: 16 }}
+                >
+                  Back to Menu
+                </Button>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          )}
+
           {/* SUB-MODALS */}
           {/* 1. Places Autocomplete Map Modal inside Profile */}
           <Portal>
@@ -608,12 +1017,12 @@ export default function ManageBusiness() {
               onDismiss={() => setShowMap(false)} 
               contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.background }]}
             >
-              <View style={[styles.modalHeader, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]}>
+              <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
                 <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Pin Business Spot</Text>
                 <IconButton icon="close" iconColor={theme.colors.onSurface} onPress={() => setShowMap(false)} />
               </View>
               
-              <View style={[styles.searchBox, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]}>
+              <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
                 <TextInput
                   placeholder="Search township or street..."
                   value={searchQuery}
@@ -621,12 +1030,13 @@ export default function ManageBusiness() {
                   style={{ flex: 1, backgroundColor: 'transparent' }}
                   onSubmitEditing={handleSearch}
                   textColor={theme.colors.onSurface}
+                  placeholderTextColor={theme.colors.onSurfaceVariant}
                   right={<TextInput.Icon icon="magnify" iconColor={theme.colors.primary} onPress={handleSearch} />}
                 />
               </View>
 
               {suggestions.length > 0 && (
-                <View style={[styles.suggestionsContainer, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF', borderColor: theme.dark ? '#333' : '#eee' }]}>
+                <View style={[styles.suggestionsContainer, { backgroundColor: theme.colors.surface, borderColor: theme.dark ? '#333' : '#eee' }]}>
                   <ScrollView keyboardShouldPersistTaps="handled">
                     {suggestions.map((item, idx) => {
                       const prop = item.properties || {};
@@ -673,8 +1083,8 @@ export default function ManageBusiness() {
                 />
               </MapView>
 
-              <View style={[styles.modalFooter, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]}>
-                <Text variant="bodySmall" style={styles.hintText}>
+              <View style={[styles.modalFooter, { backgroundColor: theme.colors.surface, borderTopColor: theme.dark ? '#333' : '#eee', borderTopWidth: 1 }]}>
+                <Text variant="bodySmall" style={[styles.hintText, { color: theme.colors.onSurfaceVariant }]}>
                   Tip: Drag the pin or search & select a place to set your exact store spot.
                 </Text>
                 <Button 
@@ -693,18 +1103,34 @@ export default function ManageBusiness() {
             <Modal 
               visible={modalVisible} 
               onDismiss={() => !isSubmitting && setModalVisible(false)}
-              contentContainerStyle={[styles.modal, { backgroundColor: theme.dark ? '#1E1E1E' : '#FFF' }]}
+              contentContainerStyle={[
+                styles.modal, 
+                { 
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.dark ? '#333' : '#eee',
+                  borderWidth: theme.dark ? 1 : 0
+                }
+              ]}
             >
-              <ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
                 <Text variant="headlineSmall" style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add New Product</Text>
                 
-                <TouchableOpacity style={styles.imagePicker} onPress={pickProductImage}>
+                <TouchableOpacity 
+                  style={[
+                    styles.imagePicker, 
+                    { 
+                      backgroundColor: theme.dark ? theme.colors.elevation.level1 : '#f5f5f5',
+                      borderColor: theme.dark ? '#444' : '#ddd'
+                    }
+                  ]} 
+                  onPress={pickProductImage}
+                >
                   {productImage ? (
                     <Image source={{ uri: productImage }} style={styles.pickedImage} />
                   ) : (
                     <View style={styles.imagePlaceholder}>
-                      <IconButton icon="camera" size={40} />
-                      <Text style={{ color: theme.colors.onSurface }}>Upload Product Image</Text>
+                      <IconButton icon="camera" size={40} iconColor={theme.colors.onSurfaceVariant} />
+                      <Text style={{ color: theme.colors.onSurfaceVariant }}>Upload Product Image</Text>
                     </View>
                   )}
                 </TouchableOpacity>

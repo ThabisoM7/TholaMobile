@@ -20,6 +20,7 @@ export default function BottomNav() {
   const isFavorites = pathname.includes('/favorites');
   const isDashboard = pathname.includes('/vendor-dashboard');
   const isProfile = pathname.includes('/profile');
+  const isLoyalty = pathname.includes('/loyalty');
 
   return (
     <View style={[styles.bottomNav, { backgroundColor: theme.colors.surface }]}>
@@ -50,17 +51,31 @@ export default function BottomNav() {
       )}
 
       {user?.role === 'CUSTOMER' && (
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/(main)/favorites')}
-        >
-          <MaterialCommunityIcons 
-            name={isFavorites ? "heart" : "heart-outline"} 
-            size={28} 
-            color={isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-          />
-          <Text style={[styles.navText, { color: isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Favorites</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => router.push('/(main)/favorites')}
+          >
+            <MaterialCommunityIcons 
+              name={isFavorites ? "heart" : "heart-outline"} 
+              size={28} 
+              color={isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+            />
+            <Text style={[styles.navText, { color: isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Favorites</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => router.push('/(main)/loyalty')}
+          >
+            <MaterialCommunityIcons 
+              name={isLoyalty ? "ticket-confirmation" : "ticket-confirmation-outline"} 
+              size={28} 
+              color={isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+            />
+            <Text style={[styles.navText, { color: isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Stamps</Text>
+          </TouchableOpacity>
+        </>
       )}
 
       <TouchableOpacity 

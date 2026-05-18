@@ -166,8 +166,8 @@ export default function VendorRegistrationScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text variant="headlineMedium" style={styles.title}>Business Profile</Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
+        <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.onSurface }]}>Business Profile</Text>
+        <Text variant="bodyLarge" style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>
           Tell us about your business so customers can find you.
         </Text>
         
@@ -191,7 +191,7 @@ export default function VendorRegistrationScreen() {
           mode="outlined"
         />
 
-        <Text variant="titleMedium" style={styles.label}>Business Category</Text>
+        <Text variant="titleMedium" style={[styles.label, { color: theme.colors.onSurface }]}>Business Category</Text>
         <View style={styles.categoryGrid}>
           {['FOOD & BEVERAGE', 'CLOTHING AND MERCH', 'SERVICE PROVIDERS', 'ELECTRONICS'].map((cat) => (
             <Button 
@@ -232,11 +232,19 @@ export default function VendorRegistrationScreen() {
         />
 
         <View style={styles.locationSection}>
-          <Text variant="titleMedium" style={styles.label}>Business Location</Text>
-          <View style={styles.locationPreview}>
+          <Text variant="titleMedium" style={[styles.label, { color: theme.colors.onSurface }]}>Business Location</Text>
+          <View 
+            style={[
+              styles.locationPreview, 
+              { 
+                backgroundColor: theme.dark ? theme.colors.elevation.level1 : '#F8F9FA',
+                borderColor: theme.dark ? '#333' : '#eee'
+              }
+            ]}
+          >
             <View style={{ flex: 1 }}>
-              <Text variant="bodyMedium" style={{ fontWeight: 'bold' }}>Coordinates Set:</Text>
-              <Text variant="bodySmall" style={{ color: '#666' }}>
+              <Text variant="bodyMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Coordinates Set:</Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
               </Text>
             </View>
@@ -254,26 +262,28 @@ export default function VendorRegistrationScreen() {
           <Modal 
             visible={showMap} 
             onDismiss={() => setShowMap(false)} 
-            contentContainerStyle={styles.modalContent}
+            contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.background }]}
           >
-            <View style={styles.modalHeader}>
-              <Text variant="titleLarge" style={{ fontWeight: 'bold' }}>Pin Your Business</Text>
-              <IconButton icon="close" onPress={() => setShowMap(false)} />
+            <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
+              <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Pin Your Business</Text>
+              <IconButton icon="close" iconColor={theme.colors.onSurface} onPress={() => setShowMap(false)} />
             </View>
             
-            <View style={styles.searchBox}>
+            <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
               <TextInput
                 placeholder="Search township or street..."
                 value={searchQuery}
                 onChangeText={handleQueryChange}
                 style={{ flex: 1, backgroundColor: 'transparent' }}
+                textColor={theme.colors.onSurface}
+                placeholderTextColor={theme.colors.onSurfaceVariant}
                 onSubmitEditing={handleSearch}
-                right={<TextInput.Icon icon="magnify" onPress={handleSearch} />}
+                right={<TextInput.Icon icon="magnify" iconColor={theme.colors.primary} onPress={handleSearch} />}
               />
             </View>
 
             {suggestions.length > 0 && (
-              <View style={styles.suggestionsContainer}>
+              <View style={[styles.suggestionsContainer, { backgroundColor: theme.colors.surface, borderColor: theme.dark ? '#333' : '#eee' }]}>
                 <ScrollView keyboardShouldPersistTaps="handled">
                   {suggestions.map((item, idx) => {
                     const prop = item.properties || {};
@@ -288,10 +298,10 @@ export default function VendorRegistrationScreen() {
                     return (
                       <TouchableOpacity
                         key={idx + '-' + (prop.osm_id || Math.random())}
-                        style={styles.suggestionItem}
+                        style={[styles.suggestionItem, { borderBottomColor: theme.dark ? '#333' : '#eee' }]}
                         onPress={() => handleSelectSuggestion(item)}
                       >
-                        <Text style={styles.suggestionText} numberOfLines={2}>
+                        <Text style={[styles.suggestionText, { color: theme.colors.onSurface }]} numberOfLines={2}>
                           {displayName}
                         </Text>
                       </TouchableOpacity>
@@ -320,8 +330,8 @@ export default function VendorRegistrationScreen() {
               />
             </MapView>
 
-            <View style={styles.modalFooter}>
-              <Text variant="bodySmall" style={styles.hintText}>
+            <View style={[styles.modalFooter, { backgroundColor: theme.colors.surface, borderTopColor: theme.dark ? '#333' : '#eee', borderTopWidth: 1 }]}>
+              <Text variant="bodySmall" style={[styles.hintText, { color: theme.colors.onSurfaceVariant }]}>
                 Tip: Drag the pin or tap anywhere on the map to set your exact spot.
               </Text>
               <Button 
@@ -366,11 +376,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginBottom: 24,
-    color: '#666',
   },
   input: {
     marginBottom: 16,
-    backgroundColor: '#fff',
   },
   label: {
     marginBottom: 8,
@@ -398,13 +406,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eee',
   },
   modalContent: {
-    backgroundColor: 'white',
     padding: 0,
     margin: 0,
     width: '100%',
@@ -418,13 +423,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 10,
-    backgroundColor: '#fff',
   },
   searchBox: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: '#fff',
     elevation: 2,
   },
   map: {
@@ -432,14 +435,12 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     padding: 20,
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     marginTop: -20,
     elevation: 10,
   },
   hintText: {
-    color: '#666',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -452,7 +453,6 @@ const styles = StyleSheet.create({
     top: 115,
     left: 16,
     right: 16,
-    backgroundColor: '#fff',
     borderRadius: 12,
     elevation: 8,
     shadowColor: '#000',
@@ -462,16 +462,13 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     maxHeight: 250,
     borderWidth: 1,
-    borderColor: '#eee',
     overflow: 'hidden',
   },
   suggestionItem: {
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   suggestionText: {
     fontSize: 14,
-    color: '#333',
   }
 });

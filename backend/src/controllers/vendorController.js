@@ -178,10 +178,33 @@ const getVendorAnalytics = async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
 
+    const reviews = await prisma.productReview.findMany({
+      where: {
+        product: {
+          vendor_id: vendor.id
+        }
+      },
+      include: {
+        user: {
+          select: {
+            full_name: true,
+            profile_picture: true
+          }
+        },
+        product: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
     const stats = {
       totalViews: interactions.filter(i => i.type === 'VIEW_PROFILE').length,
       totalInterest: interactions.filter(i => i.type === 'INTERESTED').length,
-      recentInteractions: interactions.slice(0, 20)
+      recentInteractions: interactions.slice(0, 20),
+      productReviews: reviews
     };
 
     res.status(200).json(stats);

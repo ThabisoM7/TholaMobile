@@ -66,9 +66,19 @@ Version `v1.2.5` introduces a massive, premium overhaul to the vendor management
 - **🖼️ Brand Assets (Logos & Covers)**: Enabled logo and 16:9 widescreen cover banner picks and uploads directly to Supabase storage, with direct Prisma DB integration.
 - **🗃️ Real-Time Navigation Focus Invalidation**: Swapped static page-load mounts with reactive `useFocusEffect` listeners on both the consumer **Map Page** and **Vendor Dashboard**, instantly rendering updates (like coordinates or deleted products) in real-time.
 
+## 🆕 Version 1.3.0 - Micro-Loyalty & Product Ratings & Reviews Systems
+
+Version `v1.3.0` introduces a secure Micro-Loyalty Stamp Cards system, a high-fidelity Product Ratings & Reviews engine, and multiple premium UI enhancements:
+
+- **🎫 Micro-Loyalty QR Code Stamp Cards**: Enables vendors to set stamp goals (e.g., 8 stamps) and customize reward descriptions. Customers scan signed, time-locked, dynamic QR codes to earn golden star stamps. Built with instant redemption triggers, camera scan overlays, vibration feedback, and strict cooling-off windows to block stamp-farming.
+- **⭐️ Product Ratings & Reviews System**: Allows customers to leave 1-to-5-star ratings and written reviews on listings directly via a bottom details modal on the vendor profile. Built with a robust database upsert model, preventing duplication and restricting input solely to verified customers.
+- **🔔 Customer Reviews Alert Center**: Feeds ratings and comment notifications directly onto the vendor's Analytics & Notifications page under a custom alerts feed showing stars and reviewer details.
+- **📐 Layout & Safe-Area Polishing**: Upgraded notches and safe area layout pads on the Stamps cards view, preventing top-bar overlaps on iOS. Lifted the Scan FAB to float cleanly above the absolute bottom navigation bar and swapped nested portals with direct view layouts to guarantee 100% video camera preview reliability.
+
 ## 🏷️ Versioning
 
 - **v1.0.0**: Clean initial release state.
 - **v1.2.0**: Core vendor portal modifications.
-- **v1.2.5** (Current): Vendor dashboard menu, Photon geocoding autocomplete, Supabase brand asset uploading, and navigation sync.
+- **v1.2.5**: Vendor dashboard menu, Photon geocoding autocomplete, Supabase brand asset uploading, and navigation sync.
+- **v1.3.0** (Current): Micro-Loyalty QR Code Stamp Cards, Product Ratings & Reviews, Vendor Alerts feed, safe-area layout fixes, and direct camera swap views.
 
