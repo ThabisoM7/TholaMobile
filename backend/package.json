@@ -4,8 +4,11 @@
   "description": "Backend API for Thola MVP",
   "main": "src/app.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "security:scan": "node src/scripts/scan-security.js",
+    "security:verify": "node src/scripts/verify-threats.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -13,7 +16,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
     "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1"
   },

@@ -100,7 +100,10 @@ exports.getVendorQR = async (req, res) => {
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
     // Compute secure HMAC signature
-    const hmac = crypto.createHmac('sha256', process.env.JWT_SECRET || 'thola_secure_signature_salt');
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not configured in the environment.');
+    }
+    const hmac = crypto.createHmac('sha256', process.env.JWT_SECRET);
     hmac.update(`${vendor.id}-${dateStr}`);
     const signature = hmac.digest('hex');
 
@@ -166,7 +169,10 @@ exports.claimStamp = async (req, res) => {
     }
 
     // 2. Validate cryptographic signature
-    const hmac = crypto.createHmac('sha256', process.env.JWT_SECRET || 'thola_secure_signature_salt');
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not configured in the environment.');
+    }
+    const hmac = crypto.createHmac('sha256', process.env.JWT_SECRET);
     hmac.update(`${vendor_id}-${date}`);
     const expectedSignature = hmac.digest('hex');
 
