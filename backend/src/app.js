@@ -16,6 +16,9 @@ const promotionRoutes = require('./routes/promotionRoutes');
 
 const app = express();
 
+// Trust the first proxy (Railway) to enable secure X-Forwarded-For headers for rate-limiting
+app.set('trust proxy', 1);
+
 // Step 1: Enforce secure headers via Helmet
 app.use(helmet());
 
