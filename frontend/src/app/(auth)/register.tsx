@@ -1,47 +1,111 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, useTheme } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, useTheme, Divider } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
+import { supabase } from '../../api/supabase';
+import { isValidSAMobileNumber } from '../../utils/validation';
 import { useAuthStore } from '../../store/authStore';
-import apiClient from '../../api/client';
 
 export default function RegisterScreen() {
   const { role } = useLocalSearchParams<{ role: string }>();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { login } = useAuthStore();
   const theme = useTheme();
 
-  const handleRegister = async () => {
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+  // State
+  const [step, setStep] = useState<'EMAIL' | 'OTP' | 'PHONE'>('EMAIL');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSendOTP = async () => {
+    if (!email) {
+      setError('Please enter a valid email address.');
       return;
     }
-    try {
-      setLoading(true);
-      setError('');
-      const response = await apiClient.post('/auth/register', { 
-        full_name: fullName, 
-        email, 
-        password,
-        role: role || 'CUSTOMER'
-      });
-      await login(response.data, response.data.token);
+    
+    setLoading(true);
+    setError('');
+    
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        // Optional: pass data to the trigger if supported, otherwise trigger handles it
+      },
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError(authError.message);
+    } else {
+      setStep('OTP');
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6) {
+      setError('Please enter the 6-digit code.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'email',
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      setError('Invalid code. Please try again.');
+    } else if (data.session) {
+      // User verified! Save the session token to Zustand so apiClient works
+      const { login } = useAuthStore.getState();
+      await login(data.session.user as any, data.session.access_token);
       
+      // Now ask for phone number (especially if they are a VENDOR)
+      setStep('PHONE');
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!isValidSAMobileNumber(phone)) {
+      setError('Please enter a valid SA mobile number (e.g. 072 123 4567)');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No active session found");
+
+      // Note: The SQL trigger has already created the row in `public."User"`.
+      // We just need to update it with the phone and role.
+      const { error: updateError } = await supabase
+        .from('User')
+        .update({ 
+          phone_number: phone,
+          role: role || 'CUSTOMER'
+        })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+      
+      // Proceed to the next step
       if (role === 'VENDOR') {
-        // Redirect to Vendor onboarding
         router.replace('/(main)/vendor-registration');
       } else {
         router.replace('/(main)/map');
       }
     } catch (err: any) {
-      console.log('Registration Error Details:', err.response?.data || err.message);
-      setError(err.response?.data?.message || 'Registration failed. Please check your connection and try again.');
+      setError(err.message || 'Failed to save phone number.');
     } finally {
       setLoading(false);
     }
@@ -58,82 +122,108 @@ export default function RegisterScreen() {
           {role === 'VENDOR' ? 'Register your business profile' : 'Start discovering local goods'}
         </Text>
         
-        {error ? <Text style={{ color: theme.colors.error, marginBottom: 10 }}>{error}</Text> : null}
+        {step === 'EMAIL' && (
+          <>
+            <TextInput
+              label="Email Address"
+              value={email}
+              onChangeText={(text) => { setEmail(text); setError(''); }}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              mode="outlined"
+              style={styles.input}
+              disabled={loading}
+            />
+            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
+            
+            <Button 
+              mode="contained" 
+              onPress={handleSendOTP} 
+              loading={loading}
+              disabled={loading}
+              style={styles.button}
+              contentStyle={{ paddingVertical: 8 }}
+            >
+              Send Verification Code
+            </Button>
+          </>
+        )}
 
-        <TextInput
-          label="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
-          style={styles.input}
-          mode="outlined"
-        />
+        {step === 'OTP' && (
+          <>
+            <Text style={{ marginBottom: 16 }}>We sent a 6-digit code to {email}</Text>
+            <TextInput
+              label="6-Digit OTP Code"
+              value={otp}
+              onChangeText={(text) => { setOtp(text); setError(''); }}
+              keyboardType="number-pad"
+              maxLength={6}
+              mode="outlined"
+              style={styles.input}
+              disabled={loading}
+            />
+            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
+            
+            <Button 
+              mode="contained" 
+              onPress={handleVerifyOTP} 
+              loading={loading}
+              disabled={loading}
+              style={styles.button}
+              contentStyle={{ paddingVertical: 8 }}
+            >
+              Verify Email
+            </Button>
+            
+            <Button 
+              mode="text" 
+              onPress={() => setStep('EMAIL')}
+              disabled={loading}
+              style={{ marginTop: 8 }}
+            >
+              Use a different email
+            </Button>
+          </>
+        )}
 
-        <TextInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          style={styles.input}
-          mode="outlined"
-        />
-        
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          mode="outlined"
-        />
+        {step === 'PHONE' && (
+          <>
+            <Text style={{ marginBottom: 16 }}>Almost done! What's your mobile number?</Text>
+            <TextInput
+              label="Phone Number"
+              value={phone}
+              onChangeText={(text) => { setPhone(text); setError(''); }}
+              keyboardType="phone-pad"
+              mode="outlined"
+              placeholder="082 123 4567"
+              style={styles.input}
+              disabled={loading}
+            />
+            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
+            
+            <Button 
+              mode="contained" 
+              onPress={handleSavePhone} 
+              loading={loading}
+              disabled={loading}
+              style={styles.button}
+              contentStyle={{ paddingVertical: 8 }}
+            >
+              Complete Registration
+            </Button>
+          </>
+        )}
 
-        <TextInput
-          label="Confirm Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          style={styles.input}
-          mode="outlined"
-        />
-
-        <Button 
-          mode="contained" 
-          onPress={handleRegister} 
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-          contentStyle={{ paddingVertical: 8 }}
-        >
-          Register
-        </Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scroll: {
-    padding: 24,
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    marginBottom: 32,
-    color: '#666',
-  },
-  input: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
-  },
-  button: {
-    marginTop: 16,
-    borderRadius: 8,
-  }
+  container: { flex: 1 },
+  scroll: { padding: 24, flexGrow: 1, justifyContent: 'center' },
+  title: { fontWeight: 'bold', marginBottom: 8 },
+  subtitle: { marginBottom: 32, opacity: 0.7 },
+  input: { marginBottom: 8 },
+  button: { marginTop: 16, borderRadius: 8 },
 });

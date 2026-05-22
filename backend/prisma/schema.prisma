@@ -9,11 +9,12 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  full_name String
-  email     String   @unique
-  password        String
+  id              String   @id @default(uuid())
+  full_name       String?
+  email           String   @unique
+  password        String?
   role            Role     @default(CUSTOMER)
+  phone_number    String?
   profile_picture String?
   age             Int?
   location        String?

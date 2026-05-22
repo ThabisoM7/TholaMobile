@@ -43,6 +43,14 @@ const registerBusiness = async (req, res, next) => {
       },
     });
 
+    // Ensure the User's role is officially upgraded to VENDOR
+    if (req.user.role !== 'VENDOR') {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { role: 'VENDOR' }
+      });
+    }
+
     res.status(201).json(vendor);
   } catch (error) {
     next(error);
