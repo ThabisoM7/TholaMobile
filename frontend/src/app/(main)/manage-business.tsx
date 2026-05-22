@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Text, Button, Card, TextInput, FAB, Portal, Modal, useTheme, IconButton, ActivityIndicator } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import MapView, { Marker } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import * as Location from 'expo-location';
+
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_PK || '');
 import { useAuthStore } from '../../store/authStore';
 import apiClient from '../../api/client';
 import { uploadImage } from '../../api/supabase';
@@ -1351,24 +1353,42 @@ export default function ManageBusiness() {
                 </View>
               )}
 
-              <MapView
+              <Mapbox.MapView
                 style={styles.map}
-                customMapStyle={mapStyle}
-                region={{
-                  latitude: bizLocation.latitude,
-                  longitude: bizLocation.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
+                styleURL="mapbox://styles/thabisom04/cmpg4384s000n01qv8xbna1ot"
+                onPress={(e) => {
+                  if (e?.geometry?.coordinates) {
+                    setBizLocation({
+                      latitude: e.geometry.coordinates[1],
+                      longitude: e.geometry.coordinates[0]
+                    });
+                  }
                 }}
-                onPress={(e) => setBizLocation(e.nativeEvent.coordinate)}
               >
-                <Marker 
-                  coordinate={bizLocation} 
-                  draggable 
-                  onDragEnd={(e) => setBizLocation(e.nativeEvent.coordinate)}
-                  pinColor={theme.colors.primary}
+                <Mapbox.Camera
+                  zoomLevel={14}
+                  centerCoordinate={[bizLocation.longitude, bizLocation.latitude]}
+                  animationMode="flyTo"
+                  animationDuration={1000}
                 />
-              </MapView>
+                <Mapbox.PointAnnotation 
+                  id="bizMarker"
+                  coordinate={[bizLocation.longitude, bizLocation.latitude]} 
+                  draggable 
+                  onDragEnd={(e) => {
+                    if (e?.geometry?.coordinates) {
+                      setBizLocation({
+                        latitude: e.geometry.coordinates[1],
+                        longitude: e.geometry.coordinates[0]
+                      });
+                    }
+                  }}
+                >
+                  <View style={{
+                    width: 30, height: 30, borderRadius: 15, backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: 'white'
+                  }} />
+                </Mapbox.PointAnnotation>
+              </Mapbox.MapView>
 
               <View style={[styles.modalFooter, { backgroundColor: theme.colors.surface, borderTopColor: theme.dark ? '#333' : '#eee', borderTopWidth: 1 }]}>
                 <Text variant="bodySmall" style={[styles.hintText, { color: theme.colors.onSurfaceVariant }]}>

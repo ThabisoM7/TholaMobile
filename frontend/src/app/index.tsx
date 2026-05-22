@@ -20,7 +20,7 @@ export default function Index() {
     <View style={styles.container}>
       {/* Background Image with Dark Overlay */}
       <ImageBackground 
-        source={require('../../assets/landing-bg.png')} 
+        source={require('../../assets/landing-bg.jpg')} 
         style={styles.background}
         resizeMode="cover"
       >

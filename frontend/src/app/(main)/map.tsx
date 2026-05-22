@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import { useTheme, Searchbar, FAB, Text, Card, Avatar, Chip } from 'react-native-paper';
 import * as Location from 'expo-location';
 import apiClient from '../../api/client';
@@ -8,6 +8,8 @@ import { lightMapStyle, darkMapStyle } from '../../utils/mapStyle';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { router, useFocusEffect } from 'expo-router';
+
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_PK || '');
 
 const CATEGORIES = ['All', 'Food & Beverage', 'Clothing & Merch', 'Service Providers', 'Electronics'];
 
@@ -129,24 +131,25 @@ export default function MapScreen() {
         </ScrollView>
       </View>
 
-      <MapView
+      <Mapbox.MapView
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        customMapStyle={currentMapStyle}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        region={location ? {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        } : undefined}
+        styleURL="mapbox://styles/thabisom04/cmpg4384s000n01qv8xbna1ot"
       >
+        {location && (
+          <Mapbox.Camera
+            zoomLevel={14}
+            centerCoordinate={[location.coords.longitude, location.coords.latitude]}
+            animationMode="flyTo"
+            animationDuration={2000}
+          />
+        )}
+        <Mapbox.UserLocation visible={true} showsUserHeadingIndicator={true} />
         {filteredVendors.map((vendor) => (
-          <Marker
+          <Mapbox.PointAnnotation
             key={vendor.id}
-            coordinate={{ latitude: vendor.latitude, longitude: vendor.longitude }}
-            onPress={() => setSelectedVendor(vendor)}
+            id={vendor.id}
+            coordinate={[vendor.longitude, vendor.latitude]}
+            onSelected={() => setSelectedVendor(vendor)}
           >
             <View style={[styles.markerContainer, { backgroundColor: theme.colors.primary }]}>
               <MaterialCommunityIcons 
@@ -157,9 +160,9 @@ export default function MapScreen() {
                 color="black" 
               />
             </View>
-          </Marker>
+          </Mapbox.PointAnnotation>
         ))}
-      </MapView>
+      </Mapbox.MapView>
 
 
       {selectedVendor && (

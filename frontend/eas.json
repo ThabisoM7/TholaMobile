@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 3.8.1"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
+        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
+        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
+        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+      }
+    }
+  }
+}

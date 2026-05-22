@@ -9,7 +9,7 @@ Thola is a mobile-first, full-stack township commerce platform designed to conne
 - **UI & Styling**: React Native Paper
 - **State Management**: Zustand
 - **Forms & Validation**: React Hook Form
-- **Maps**: React Native Maps
+- **Maps**: Mapbox (@rnmapbox/maps)
 - **Hardware Integration**: Expo Camera, Expo Location, Expo Image Picker
 
 ### Backend (REST API)
@@ -69,4 +69,10 @@ Version `v1.5.0` introduces a complete, high-fidelity township marketing feed an
   2. **Deals & News feed (📣)**: A social-style chronological timeline feed presenting merchant announcement cards and widescreen special deal flyers.
 - **🛡️ DevSecOps Security Blueprint**: Established a production security logging, monitoring, and source-code analysis checklist mapped against OWASP Mobile and Web Top 10 guidelines.
 
+## 🗺️ Version 1.5.2 - Mapbox Native Integration (Latest Release)
 
+Version `v1.5.2` transitions the app from `react-native-maps` to `@rnmapbox/maps` to provide a highly customized, native Mapbox experience.
+- **Removed Expo Go Limitations**: Transitioned the frontend project from Expo Go to an EAS Development Client to support custom native modules.
+- **Custom Mapbox Styling**: Integrated custom Mapbox styles across the platform (`map.tsx`, `vendor-registration.tsx`, `manage-business.tsx`).
+- **Security & Build Integrity**: Abstracted Mapbox API Keys (Public and Secret Download Tokens) to environment variables, securing the EAS build pipeline and removing hardcoded secrets from source control.
+- **Appetize.io Testing Pipeline**: Configured `eas.json` with simulator flags to support QA testing of both Android APKs and iOS `.tar.gz` Simulator builds on Appetize.io without requiring local emulators.

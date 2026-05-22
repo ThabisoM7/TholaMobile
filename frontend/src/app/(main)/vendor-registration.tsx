@@ -3,9 +3,11 @@ import { View, ScrollView, KeyboardAvoidingView, StyleSheet, Platform, Touchable
 import { TextInput, Button, Text, useTheme, ActivityIndicator, Modal, Portal, IconButton } from 'react-native-paper';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import apiClient from '../../api/client';
 import { mapStyle } from '../../utils/mapStyle';
+
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_PK || '');
 
 export default function VendorRegistrationScreen() {
   const [businessName, setBusinessName] = useState('');
@@ -311,24 +313,42 @@ export default function VendorRegistrationScreen() {
               </View>
             )}
 
-            <MapView
+            <Mapbox.MapView
               style={styles.map}
-              customMapStyle={mapStyle}
-              region={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+              styleURL="mapbox://styles/thabisom04/cmpg4384s000n01qv8xbna1ot"
+              onPress={(e) => {
+                if (e?.geometry?.coordinates) {
+                  setLocation({
+                    latitude: e.geometry.coordinates[1],
+                    longitude: e.geometry.coordinates[0]
+                  });
+                }
               }}
-              onPress={(e) => setLocation(e.nativeEvent.coordinate)}
             >
-              <Marker 
-                coordinate={location} 
-                draggable 
-                onDragEnd={(e) => setLocation(e.nativeEvent.coordinate)}
-                pinColor={theme.colors.primary}
+              <Mapbox.Camera
+                zoomLevel={14}
+                centerCoordinate={[location.longitude, location.latitude]}
+                animationMode="flyTo"
+                animationDuration={1000}
               />
-            </MapView>
+              <Mapbox.PointAnnotation 
+                id="marker"
+                coordinate={[location.longitude, location.latitude]} 
+                draggable 
+                onDragEnd={(e) => {
+                  if (e?.geometry?.coordinates) {
+                    setLocation({
+                      latitude: e.geometry.coordinates[1],
+                      longitude: e.geometry.coordinates[0]
+                    });
+                  }
+                }}
+              >
+                <View style={{
+                  width: 30, height: 30, borderRadius: 15, backgroundColor: theme.colors.primary, borderWidth: 2, borderColor: 'white'
+                }} />
+              </Mapbox.PointAnnotation>
+            </Mapbox.MapView>
 
             <View style={[styles.modalFooter, { backgroundColor: theme.colors.surface, borderTopColor: theme.dark ? '#333' : '#eee', borderTopWidth: 1 }]}>
               <Text variant="bodySmall" style={[styles.hintText, { color: theme.colors.onSurfaceVariant }]}>

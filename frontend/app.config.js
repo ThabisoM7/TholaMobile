@@ -2,14 +2,19 @@ module.exports = {
   "expo": {
     "name": "frontend",
     "slug": "frontend",
+    "extra": {
+      "eas": {
+        "projectId": "7a8f511a-81bf-4038-b87d-1c5521b806a9"
+      }
+    },
     "version": "1.0.0",
     "scheme": "thola",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -21,8 +26,14 @@ module.exports = {
       }
     },
     "android": {
+      "package": "com.thola.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+        }
+      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -44,6 +55,13 @@ module.exports = {
         "expo-camera",
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for KYC verification."
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": process.env.MAPBOX_DOWNLOADS_TOKEN
         }
       ]
     ]
