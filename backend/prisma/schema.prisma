@@ -48,6 +48,7 @@ model Vendor {
   logo_url             String?
   banner_url           String?
   kyc_status           KycStatus @default(PENDING)
+  verifiedAt           DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
