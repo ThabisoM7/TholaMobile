@@ -10,7 +10,16 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      let decoded;
+      try {
+        // Try verifying with the Base64-decoded Buffer (required for Supabase production secrets)
+        const secretBuffer = Buffer.from(process.env.JWT_SECRET, 'base64');
+        decoded = jwt.verify(token, secretBuffer);
+      } catch (err) {
+        // Fallback to verifying with the raw string secret
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      }
 
       req.user = await prisma.user.findUnique({
         where: { id: decoded.sub },
