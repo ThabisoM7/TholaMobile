@@ -86,25 +86,27 @@ const createIdnormSession = async (req, res, next) => {
 
     // Call idnorm API to create a verification session
     const apiKey = process.env.IDNORM_API_KEY;
+    const configId = process.env.IDNORM_CONFIG_ID || 'default_config';
     
     if (!apiKey) {
       console.warn("IDNORM_API_KEY is not set in environment variables");
     }
 
     try {
-      const response = await axios.post('https://api.idnorm.com/v1/sessions', {
-        reference: vendor.id,
+      const response = await axios.post('https://api.idnorm.com/api/v1/create_session', {
+        configId: configId,
+        externalUserId: vendor.id,
         // Replace with your actual production backend URL for the webhook
-        webhook_url: 'https://thola-api.up.railway.app/api/kyc/idnorm-callback'
+        callbackUrl: 'https://thola-api.up.railway.app/api/kyc/idnorm-callback'
       }, { 
         headers: { 
-          Authorization: `Bearer ${apiKey}`,
+          'Idnorm-License-Key': apiKey,
           'Content-Type': 'application/json'
         } 
       });
       
       res.status(200).json({ 
-        sessionUrl: response.data.session_url || response.data.url, // adapt to actual IDNORM response schema
+        sessionUrl: response.data.verificationUrl, 
         reference: vendor.id 
       });
     } catch (apiError) {
