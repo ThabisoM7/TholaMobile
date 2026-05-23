@@ -10,47 +10,28 @@ export default function LoginScreen() {
   const theme = useTheme();
   
   // State
-  const [step, setStep] = useState<'EMAIL' | 'OTP' | 'MFA'>('EMAIL');
+  const [step, setStep] = useState<'CREDENTIALS' | 'MFA'>('CREDENTIALS');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const { login } = useAuthStore(); // We'll still call this if the app expects Zustand to hold the user
 
-  const handleSendOTP = async () => {
-    if (!email) {
-      setError('Please enter your email.');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError('Please enter both email and password.');
       return;
     }
     setLoading(true);
     setError('');
     
-    const { error: authError } = await supabase.auth.signInWithOtp({ email });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    
     setLoading(false);
 
-    if (authError) setError(authError.message);
-    else setStep('OTP');
-  };
-
-  const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      setError('Please enter the 6-digit code.');
-      return;
-    }
-    setLoading(true);
-    setError('');
-
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
-
-    setLoading(false);
-
-    if (verifyError) {
-      setError('Invalid code. Please try again.');
+    if (authError) {
+      setError(authError.message);
     } else if (data.session) {
       // Check if MFA is required
       const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -66,10 +47,37 @@ export default function LoginScreen() {
   };
 
   const handleSuccessfulLogin = async (session: any) => {
-    // Optional: Fetch the user's role from the vendors table if needed
-    // For now, we just pass the Supabase session token to Zustand
-    await login(session.user, session.access_token);
-    router.replace('/(main)/map');
+    // Fetch the user's full profile from the database
+    const { data: userProfile, error } = await supabase
+      .from('User')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (!error && userProfile) {
+      // Merge session user with db user profile
+      const fullUser = {
+        ...session.user,
+        ...userProfile,
+      };
+      await login(fullUser, session.access_token);
+      
+      // If the user hasn't selected a role, direct them to complete registration
+      if (!fullUser.role) {
+        router.replace('/(auth)/register');
+        return;
+      }
+
+      if (fullUser.role === 'VENDOR') {
+        router.replace('/(main)/vendor-dashboard');
+      } else {
+        router.replace('/(main)/map');
+      }
+    } else {
+      // Fallback if profile doesn't exist yet (e.g. trigger failed or new user)
+      await login(session.user, session.access_token);
+      router.replace('/(auth)/register');
+    }
   };
 
   return (
@@ -81,7 +89,7 @@ export default function LoginScreen() {
         <Text variant="displayMedium" style={styles.title}>THOLA</Text>
         <Text variant="bodyLarge" style={styles.subtitle}>Welcome back to your township marketplace</Text>
         
-        {step === 'EMAIL' && (
+        {step === 'CREDENTIALS' && (
           <>
             <TextInput
               label="Email Address"
@@ -92,37 +100,11 @@ export default function LoginScreen() {
               style={styles.input}
               mode="outlined"
             />
-            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
-
-            <Button 
-              mode="contained" 
-              onPress={handleSendOTP} 
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-              contentStyle={{ paddingVertical: 8 }}
-            >
-              Send Login Code
-            </Button>
-            
-            <View style={styles.footer}>
-              <Text variant="bodyMedium">Don't have an account? </Text>
-              <Link href="/(auth)/role-selection" asChild>
-                <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Sign up</Text>
-              </Link>
-            </View>
-          </>
-        )}
-
-        {step === 'OTP' && (
-          <>
-            <Text style={{ marginBottom: 16 }}>We sent a 6-digit login code to {email}</Text>
             <TextInput
-              label="6-Digit OTP Code"
-              value={otp}
-              onChangeText={(text) => { setOtp(text); setError(''); }}
-              keyboardType="number-pad"
-              maxLength={6}
+              label="Password"
+              value={password}
+              onChangeText={(text) => { setPassword(text); setError(''); }}
+              secureTextEntry
               style={styles.input}
               mode="outlined"
             />
@@ -130,23 +112,21 @@ export default function LoginScreen() {
 
             <Button 
               mode="contained" 
-              onPress={handleVerifyOTP} 
+              onPress={handleLogin} 
               loading={loading}
               disabled={loading}
               style={styles.button}
               contentStyle={{ paddingVertical: 8 }}
             >
-              Verify & Login
+              Log In
             </Button>
-
-            <Button 
-              mode="text" 
-              onPress={() => setStep('EMAIL')}
-              disabled={loading}
-              style={{ marginTop: 8 }}
-            >
-              Back
-            </Button>
+            
+            <View style={styles.footer}>
+              <Text variant="bodyMedium">Don't have an account? </Text>
+              <Link href="/(auth)/register" asChild>
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Sign up</Text>
+              </Link>
+            </View>
           </>
         )}
 

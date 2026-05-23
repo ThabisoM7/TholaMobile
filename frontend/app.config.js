@@ -4,7 +4,7 @@ module.exports = {
     "slug": "frontend",
     "extra": {
       "eas": {
-        "projectId": "7a8f511a-81bf-4038-b87d-1c5521b806a9"
+        "projectId": "7f6dca72-1497-459e-9a76-39a73cc0adc0"
       }
     },
     "version": "1.0.0",
@@ -62,6 +62,13 @@ module.exports = {
         {
           "RNMapboxMapsImpl": "mapbox",
           "RNMapboxMapsDownloadToken": process.env.MAPBOX_DOWNLOADS_TOKEN
+        }
+      ],
+      "expo-web-browser",
+      [
+        "freerasp-react-native",
+        {
+          "android": {}
         }
       ]
     ]

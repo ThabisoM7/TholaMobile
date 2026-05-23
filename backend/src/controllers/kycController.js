@@ -1,5 +1,4 @@
 const prisma = require('../config/db');
-const axios = require('axios');
 
 // @desc    Submit KYC documents
 // @route   POST /kyc

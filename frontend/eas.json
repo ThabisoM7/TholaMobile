@@ -9,8 +9,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+        "EXPO_PUBLIC_API_URL": "https://tholagateway-production.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE",
+        "EXPO_PUBLIC_MAPBOX_PK": "pk.MAPBOX_KEY_PLACEHOLDER"
       }
     },
     "preview": {
@@ -23,8 +24,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+        "EXPO_PUBLIC_API_URL": "https://tholagateway-production.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE",
+        "EXPO_PUBLIC_MAPBOX_PK": "pk.MAPBOX_KEY_PLACEHOLDER"
       }
     },
     "production": {
@@ -34,8 +36,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
-        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE"
+        "EXPO_PUBLIC_API_URL": "https://tholagateway-production.up.railway.app",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSy_YOUR_GOOGLE_MAPS_KEY_HERE",
+        "EXPO_PUBLIC_MAPBOX_PK": "pk.MAPBOX_KEY_PLACEHOLDER"
       }
     }
   }
