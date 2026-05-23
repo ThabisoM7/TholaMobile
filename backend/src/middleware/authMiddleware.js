@@ -15,10 +15,10 @@ const protect = async (req, res, next) => {
       try {
         // Try verifying with the Base64-decoded Buffer (required for Supabase production secrets)
         const secretBuffer = Buffer.from(process.env.JWT_SECRET, 'base64');
-        decoded = jwt.verify(token, secretBuffer);
+        decoded = jwt.verify(token, secretBuffer, { algorithms: ['HS256', 'RS256'] });
       } catch (err) {
         // Fallback to verifying with the raw string secret
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+        decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256', 'RS256'] });
       }
 
       req.user = await prisma.user.findUnique({
