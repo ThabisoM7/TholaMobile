@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const axios = require('axios');
 
 // @desc    Submit KYC documents
 // @route   POST /kyc
@@ -34,19 +35,6 @@ const submitKyc = async (req, res, next) => {
         verification_status: 'PENDING',
       },
     });
-
-    // Simulate Smile ID verification (Auto verify for MVP)
-    setTimeout(async () => {
-      await prisma.kyc.update({
-        where: { id: kyc.id },
-        data: { verification_status: 'VERIFIED' },
-      });
-      await prisma.vendor.update({
-        where: { id: vendor.id },
-        data: { kyc_status: 'VERIFIED' },
-      });
-      console.log(`KYC for vendor ${vendor.id} automatically verified.`);
-    }, 5000);
 
     res.status(201).json(kyc);
   } catch (error) {
@@ -97,25 +85,34 @@ const createIdnormSession = async (req, res, next) => {
     }
 
     // Call idnorm API to create a verification session
-    // We pass our IDNORM_API_KEY securely from the backend environment
     const apiKey = process.env.IDNORM_API_KEY;
     
-    // In a real idnorm implementation, this would be a POST to their session endpoint
-    // with your vendor's ID as the reference.
-    // Example: 
-    // const response = await axios.post('https://api.idnorm.com/v1/sessions', {
-    //   reference: vendor.id,
-    //   webhook_url: 'https://your-api.com/api/kyc/idnorm-callback'
-    // }, { headers: { Authorization: `Bearer ${apiKey}` } });
-    
-    // Since we don't have the exact idnorm URL, we generate a mock URL that 
-    // the frontend WebBrowser will open. 
-    const mockSessionUrl = `https://idnorm.com/verify?session_id=${vendor.id}&api_key_valid=${apiKey ? 'true' : 'false'}`;
+    if (!apiKey) {
+      console.warn("IDNORM_API_KEY is not set in environment variables");
+    }
 
-    res.status(200).json({ 
-      sessionUrl: mockSessionUrl, 
-      reference: vendor.id 
-    });
+    try {
+      const response = await axios.post('https://api.idnorm.com/v1/sessions', {
+        reference: vendor.id,
+        // Replace with your actual production backend URL for the webhook
+        webhook_url: 'https://thola-api.up.railway.app/api/kyc/idnorm-callback'
+      }, { 
+        headers: { 
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        } 
+      });
+      
+      res.status(200).json({ 
+        sessionUrl: response.data.session_url || response.data.url, // adapt to actual IDNORM response schema
+        reference: vendor.id 
+      });
+    } catch (apiError) {
+      console.error('IDNORM API Error:', apiError.response?.data || apiError.message);
+      // Fallback for development if the API key isn't working/set
+      res.status(500);
+      throw new Error('Failed to create IDNORM verification session');
+    }
   } catch (error) {
     next(error);
   }

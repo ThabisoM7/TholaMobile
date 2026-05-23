@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, HelperText, useTheme, Card } from 'react-native-paper';
 import { router } from 'expo-router';
@@ -12,6 +12,14 @@ export default function RegisterScreen() {
 
   // State
   const [step, setStep] = useState<'CREDENTIALS' | 'ROLE' | 'PROFILE'>('CREDENTIALS');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setStep('ROLE');
+      }
+    });
+  }, []);
   
   // Credentials
   const [email, setEmail] = useState('');
@@ -82,12 +90,14 @@ export default function RegisterScreen() {
       // Update the user in the database
       const { error: updateError } = await supabase
         .from('User')
-        .update({ 
+        .upsert({ 
+          id: user.id,
+          email: user?.email,
           full_name: fullName,
           phone_number: phone,
-          role: role || 'CUSTOMER'
-        })
-        .eq('id', user.id);
+          role: role || 'CUSTOMER',
+          updatedAt: new Date().toISOString()
+        });
 
       if (updateError) throw updateError;
       
