@@ -1,10 +1,23 @@
 const { createClient } = require('@supabase/supabase-js');
 const prisma = require('../config/db');
 
-// Initialize Supabase Client (Accepts both standard and Expo prefixed env vars)
-const supabaseUrl = process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+let supabaseInstance = null;
+
+const getSupabase = () => {
+  if (!supabaseInstance) {
+    const url = process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    const key = process.env.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
+    
+    if (!url || !key) {
+      console.error("CRITICAL ERROR: Supabase environment variables are missing!");
+    }
+    
+    // We pass a dummy url if missing just to prevent the hard crash on startup, 
+    // but the requests will fail gracefully later.
+    supabaseInstance = createClient(url || 'https://placeholder.supabase.co', key || 'placeholder');
+  }
+  return supabaseInstance;
+};
 
 const protect = async (req, res, next) => {
   let token;
@@ -17,6 +30,7 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       
       // Verify token with Supabase directly
+      const supabase = getSupabase();
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
       
       if (authError || !user) {
