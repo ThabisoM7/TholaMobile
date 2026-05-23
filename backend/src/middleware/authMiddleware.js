@@ -1,9 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 const prisma = require('../config/db');
 
-// Initialize Supabase Client
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+// Initialize Supabase Client (Accepts both standard and Expo prefixed env vars)
+const supabaseUrl = process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const protect = async (req, res, next) => {
