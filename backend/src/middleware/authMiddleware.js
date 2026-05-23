@@ -13,12 +13,23 @@ const protect = async (req, res, next) => {
       
       let decoded;
       try {
+        const decodedHeader = jwt.decode(token, { complete: true });
+        console.log('--- JWT VERIFICATION DEBUG ---');
+        console.log('Token Header:', decodedHeader?.header);
+        console.log('JWT_SECRET starts with:', process.env.JWT_SECRET?.substring(0, 5));
+        
         // Try verifying with the Base64-decoded Buffer (required for Supabase production secrets)
         const secretBuffer = Buffer.from(process.env.JWT_SECRET, 'base64');
-        decoded = jwt.verify(token, secretBuffer, { algorithms: ['HS256', 'RS256'] });
+        decoded = jwt.verify(token, secretBuffer);
       } catch (err) {
+        console.log('Failed buffer verification:', err.message);
         // Fallback to verifying with the raw string secret
-        decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256', 'RS256'] });
+        try {
+          decoded = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (innerErr) {
+          console.log('Failed string verification:', innerErr.message);
+          throw innerErr;
+        }
       }
 
       req.user = await prisma.user.findUnique({
