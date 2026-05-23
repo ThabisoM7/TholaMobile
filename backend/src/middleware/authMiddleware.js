@@ -1,5 +1,10 @@
-const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 const prisma = require('../config/db');
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const protect = async (req, res, next) => {
   let token;
@@ -11,29 +16,15 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       
-      let decoded;
-      try {
-        const decodedHeader = jwt.decode(token, { complete: true });
-        console.log('--- JWT VERIFICATION DEBUG ---');
-        console.log('Token Header:', decodedHeader?.header);
-        console.log('JWT_SECRET starts with:', process.env.JWT_SECRET?.substring(0, 5));
-        
-        // Try verifying with the Base64-decoded Buffer (required for Supabase production secrets)
-        const secretBuffer = Buffer.from(process.env.JWT_SECRET, 'base64');
-        decoded = jwt.verify(token, secretBuffer);
-      } catch (err) {
-        console.log('Failed buffer verification:', err.message);
-        // Fallback to verifying with the raw string secret
-        try {
-          decoded = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (innerErr) {
-          console.log('Failed string verification:', innerErr.message);
-          throw innerErr;
-        }
+      // Verify token with Supabase directly
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        throw new Error(authError?.message || 'Invalid token');
       }
 
       req.user = await prisma.user.findUnique({
-        where: { id: decoded.sub },
+        where: { id: user.id },
         select: { id: true, email: true, role: true, full_name: true, profile_picture: true, age: true, location: true, bio: true }
       });
 
