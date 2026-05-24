@@ -100,6 +100,9 @@ export default function VendorDashboard() {
           ) : (
             products.map((p: any) => (
               <Card key={p.id} style={[styles.productCard, { backgroundColor: theme.colors.surface }]}>
+                {p.image_url ? (
+                  <Card.Cover source={{ uri: p.image_url }} style={{ height: 150, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }} />
+                ) : null}
                 <Card.Title 
                   title={p.name} 
                   subtitle={`R ${p.price}`} 
