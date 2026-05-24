@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, HelperText, useTheme, Divider } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, useTheme, Divider, Checkbox, Portal, Modal } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../api/supabase';
 import { isValidSAMobileNumber } from '../../utils/validation';
 import { useAuthStore } from '../../store/authStore';
+import { TERMS_AND_CONDITIONS, POPIA_POLICY } from '../../constants/policies';
 
 export default function RegisterScreen() {
   const { role } = useLocalSearchParams<{ role: string }>();
@@ -17,6 +18,11 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Policies State
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activePolicy, setActivePolicy] = useState<'T&C' | 'POPIA'>('T&C');
 
   const handleSendOTP = async () => {
     if (!email) {
@@ -31,7 +37,6 @@ export default function RegisterScreen() {
       email,
       options: {
         shouldCreateUser: true,
-        // Optional: pass data to the trigger if supported, otherwise trigger handles it
       },
     });
 
@@ -64,11 +69,8 @@ export default function RegisterScreen() {
     if (verifyError) {
       setError('Invalid code. Please try again.');
     } else if (data.session) {
-      // User verified! Save the session token to Zustand so apiClient works
       const { login } = useAuthStore.getState();
       await login(data.session.user as any, data.session.access_token);
-      
-      // Now ask for phone number (especially if they are a VENDOR)
       setStep('PHONE');
     }
   };
@@ -86,8 +88,6 @@ export default function RegisterScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No active session found");
 
-      // Note: The SQL trigger has already created the row in `public."User"`.
-      // We just need to update it with the phone and role.
       const { error: updateError } = await supabase
         .from('User')
         .update({ 
@@ -98,7 +98,6 @@ export default function RegisterScreen() {
 
       if (updateError) throw updateError;
       
-      // Proceed to the next step
       if (role === 'VENDOR') {
         router.replace('/(main)/vendor-registration');
       } else {
@@ -136,11 +135,29 @@ export default function RegisterScreen() {
             />
             {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
             
+            <View style={styles.checkboxContainer}>
+              <Checkbox.Android 
+                status={acceptedTerms ? 'checked' : 'unchecked'} 
+                onPress={() => setAcceptedTerms(!acceptedTerms)} 
+                color={theme.colors.primary}
+              />
+              <Text variant="bodyMedium" style={styles.checkboxLabel}>
+                I accept the{' '}
+                <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('T&C'); setModalVisible(true); }}>
+                  Terms & Conditions
+                </Text>
+                {' '}and{' '}
+                <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('POPIA'); setModalVisible(true); }}>
+                  POPIA Policy
+                </Text>
+              </Text>
+            </View>
+
             <Button 
               mode="contained" 
               onPress={handleSendOTP} 
               loading={loading}
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
               style={styles.button}
               contentStyle={{ paddingVertical: 8 }}
             >
@@ -214,6 +231,29 @@ export default function RegisterScreen() {
           </>
         )}
 
+        <Portal>
+          <Modal 
+            visible={modalVisible} 
+            onDismiss={() => setModalVisible(false)} 
+            contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.surface }]}
+          >
+            <Text variant="titleLarge" style={styles.modalTitle}>
+              {activePolicy === 'T&C' ? 'Terms & Conditions' : 'POPIA Policy'}
+            </Text>
+            <ScrollView style={styles.modalScroll}>
+              <Text variant="bodyMedium">
+                {activePolicy === 'T&C' ? TERMS_AND_CONDITIONS : POPIA_POLICY}
+              </Text>
+            </ScrollView>
+            <Button 
+              mode="contained" 
+              onPress={() => { setAcceptedTerms(true); setModalVisible(false); }}
+              style={styles.modalCloseBtn}
+            >
+              Accept & Close
+            </Button>
+          </Modal>
+        </Portal>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -224,6 +264,23 @@ const styles = StyleSheet.create({
   scroll: { padding: 24, flexGrow: 1, justifyContent: 'center' },
   title: { fontWeight: 'bold', marginBottom: 8 },
   subtitle: { marginBottom: 32, opacity: 0.7 },
-  input: { marginBottom: 8 },
-  button: { marginTop: 16, borderRadius: 8 },
+  input: { marginBottom: 16, backgroundColor: '#fff' },
+  button: { marginTop: 8, borderRadius: 8 },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingRight: 24,
+  },
+  checkboxLabel: { flex: 1, lineHeight: 20 },
+  link: { fontWeight: 'bold' },
+  modalContent: {
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: { fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
+  modalScroll: { marginBottom: 16 },
+  modalCloseBtn: { borderRadius: 8 }
 });

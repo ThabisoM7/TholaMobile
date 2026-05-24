@@ -1,10 +1,10 @@
 module.exports = {
   "expo": {
     "name": "frontend",
-    "slug": "frontend",
+    "slug": "tholaapp1",
     "extra": {
       "eas": {
-        "projectId": "7a8f511a-81bf-4038-b87d-1c5521b806a9"
+        "projectId": "9559ea0e-6128-42e3-81ad-bed10c757438"
       }
     },
     "version": "1.0.0",
@@ -20,18 +20,10 @@ module.exports = {
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.thola.app",
-      "config": {
-        "googleMapsApiKey": process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
-      }
+      "bundleIdentifier": "com.thola.app"
     },
     "android": {
       "package": "com.thola.app",
-      "config": {
-        "googleMaps": {
-          "apiKey": process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
-        }
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"

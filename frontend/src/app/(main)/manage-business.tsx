@@ -1355,7 +1355,7 @@ export default function ManageBusiness() {
 
               <Mapbox.MapView
                 style={styles.map}
-                styleURL="mapbox://styles/thabisom04/cmpg4384s000n01qv8xbna1ot"
+                styleURL="mapbox://styles/tatts-io/cmpexgmoc002001sj7ztf2do6"
                 onPress={(e) => {
                   if (e?.geometry?.coordinates) {
                     setBizLocation({
