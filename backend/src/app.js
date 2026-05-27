@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -13,6 +14,7 @@ const favoriteRoutes = require('./routes/favoriteRoutes');
 const loyaltyRoutes = require('./routes/loyaltyRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
+const assistantRoutes = require('./routes/assistantRoutes');
 
 const app = express();
 
@@ -56,6 +58,7 @@ app.use('/favorites', favoriteRoutes);
 app.use('/loyalty', loyaltyRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/promotions', promotionRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);

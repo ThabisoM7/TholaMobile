@@ -1,22 +1,11 @@
-import { GoogleGenAI } from '@google/genai';
+const { GoogleGenAI } = require('@google/genai');
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-export interface IntentExtraction {
-  targetCategory: string | null;
-  maxPrice: number | null;
-  needsLocation: boolean;
-  searchQuery: string | null;
-}
-
-export class RagService {
-  /**
-   * Extract intent from the translated English query.
-   * For example: "Vendor selling food for under R100" -> { targetCategory: "food", maxPrice: 100, ... }
-   */
-  async extractIntent(query: string): Promise<IntentExtraction> {
+class RagService {
+  async extractIntent(query) {
     const prompt = `
       You are an AI assistant for a local vendor marketplace called Thola.
       Extract the user's intent from the following query. Return ONLY a JSON object with the following keys:
@@ -40,23 +29,19 @@ export class RagService {
       const responseContent = response.text;
       if (!responseContent) throw new Error("No content from LLM");
 
-      return JSON.parse(responseContent) as IntentExtraction;
+      return JSON.parse(responseContent);
     } catch (error) {
       console.error('LLM Intent Extraction Error:', error);
-      // Fallback
       return {
         targetCategory: null,
         maxPrice: null,
-        needsLocation: true, // safe default
+        needsLocation: true,
         searchQuery: query,
       };
     }
   }
 
-  /**
-   * Generate an embedding vector for a given text using Gemini's embedding model.
-   */
-  async generateEmbedding(text: string): Promise<number[]> {
+  async generateEmbedding(text) {
     try {
       const response = await ai.models.embedContent({
         model: 'text-embedding-004',
@@ -73,10 +58,7 @@ export class RagService {
     }
   }
 
-  /**
-   * Generate a conversational response based on the search results.
-   */
-  async generateResponse(query: string, results: any[]): Promise<string> {
+  async generateResponse(query, results) {
     const prompt = `
       You are Thola's helpful voice assistant. The user asked: "${query}".
       Here are the search results from the database: ${JSON.stringify(results)}.
@@ -98,4 +80,6 @@ export class RagService {
   }
 }
 
-export const ragService = new RagService();
+module.exports = {
+  ragService: new RagService()
+};
