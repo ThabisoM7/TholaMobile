@@ -44,8 +44,11 @@ class RagService {
   async generateEmbedding(text) {
     try {
       const response = await ai.models.embedContent({
-        model: 'text-embedding-004',
+        model: 'gemini-embedding-2',
         contents: text,
+        config: {
+          outputDimensionality: 768
+        }
       });
       
       const embedding = response.embeddings?.[0]?.values;
