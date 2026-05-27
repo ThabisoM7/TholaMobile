@@ -14,7 +14,7 @@ class LelapaService {
 
   get headers() {
     return {
-      'Authorization': `Bearer ${this.apiKey}`,
+      'X-CLIENT-TOKEN': this.apiKey,
       'Content-Type': 'application/json',
     };
   }
@@ -24,7 +24,7 @@ class LelapaService {
       const formData = new FormData();
       formData.append('file', fs.createReadStream(audioFilePath));
 
-      const response = await axios.post(`${LELAPA_API_BASE_URL}/transcribe`, formData, {
+      const response = await axios.post(`${LELAPA_API_BASE_URL}/transcribe/sync`, formData, {
         headers: {
           ...this.headers,
           ...formData.getHeaders(),
@@ -33,42 +33,31 @@ class LelapaService {
 
       return response.data.text || '';
     } catch (error) {
-      console.error('Lelapa ASR Error:', error);
+      console.error('Lelapa ASR Error:', error.response?.data || error.message);
       throw new Error('Failed to transcribe audio via Lelapa API');
     }
   }
 
   async translateText(text, sourceLang, targetLang) {
     try {
-      const response = await axios.post(`${LELAPA_API_BASE_URL}/translate`, {
-        text,
-        source_language: sourceLang,
-        target_language: targetLang
+      const response = await axios.post(`${LELAPA_API_BASE_URL}/translate/process`, {
+        input_text: text,
+        source_lang: sourceLang,
+        target_lang: targetLang
       }, {
         headers: this.headers
       });
 
-      return response.data.translated_text || '';
+      return response.data.translation?.[0]?.translated_text || '';
     } catch (error) {
-      console.error('Lelapa Translation Error:', error);
+      console.error('Lelapa Translation Error:', error.response?.data || error.message);
       throw new Error(`Failed to translate text from ${sourceLang} to ${targetLang}`);
     }
   }
 
   async textToSpeech(text, language) {
-    try {
-      const response = await axios.post(`${LELAPA_API_BASE_URL}/tts`, {
-        text,
-        language
-      }, {
-        headers: this.headers
-      });
-
-      return response.data.audio_url || '';
-    } catch (error) {
-      console.error('Lelapa TTS Error:', error);
-      throw new Error('Failed to convert text to speech via Lelapa API');
-    }
+    console.warn('Lelapa TTS is not officially supported on /v1/tts. Mocking return.');
+    return '';
   }
 }
 
