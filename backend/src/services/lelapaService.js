@@ -22,7 +22,10 @@ class LelapaService {
   async transcribeAudio(audioFilePath) {
     try {
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(audioFilePath));
+      formData.append('file', fs.createReadStream(audioFilePath), {
+        filename: 'audio.m4a',
+        contentType: 'audio/mp4'
+      });
 
       const response = await axios.post(`${LELAPA_API_BASE_URL}/transcribe/sync`, formData, {
         headers: {
