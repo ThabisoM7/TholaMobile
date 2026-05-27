@@ -54,7 +54,7 @@ class RagService {
       return embedding;
     } catch (error) {
       console.error('Embedding Generation Error:', error);
-      throw new Error('Failed to generate embedding');
+      throw new Error(`Failed to generate embedding: ${error.message}`);
     }
   }
 
