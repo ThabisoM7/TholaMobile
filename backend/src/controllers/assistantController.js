@@ -32,7 +32,7 @@ const processVoiceQuery = async (req, res) => {
     const maxDist = 5000;
     let sqlQuery = `
       SELECT p.id, p.name, p.price, p.description, v.business_name, 
-             v.address, ST_DistanceSphere(ST_MakePoint($1, $2), ST_MakePoint(v.longitude, v.latitude)) as distance
+             v.address, ST_DistanceSphere(ST_MakePoint($1::float, $2::float), ST_MakePoint(v.longitude::float, v.latitude::float)) as distance
       FROM "Product" p
       JOIN "Vendor" v ON p.vendor_id = v.id
       WHERE 1=1
@@ -41,7 +41,7 @@ const processVoiceQuery = async (req, res) => {
     let paramIndex = 3;
 
     if (intent.needsLocation && !isNaN(userLat) && !isNaN(userLng)) {
-      sqlQuery += ` AND ST_DistanceSphere(ST_MakePoint($1, $2), ST_MakePoint(v.longitude, v.latitude)) <= ${maxDist}`;
+      sqlQuery += ` AND ST_DistanceSphere(ST_MakePoint($1::float, $2::float), ST_MakePoint(v.longitude::float, v.latitude::float)) <= ${maxDist}`;
     }
 
     if (intent.maxPrice) {
