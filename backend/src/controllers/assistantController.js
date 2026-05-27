@@ -15,7 +15,7 @@ const processVoiceQuery = async (req, res) => {
     const userLat = parseFloat(req.body.lat);
     const userLng = parseFloat(req.body.lng);
 
-    const nativeText = await lelapaService.transcribeAudio(file.path);
+    const nativeText = await lelapaService.transcribeAudio(file.path, file.originalname, file.mimetype);
     if (!nativeText) {
       return res.status(400).json({ error: 'Could not transcribe audio' });
     }

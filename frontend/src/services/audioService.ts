@@ -15,9 +15,33 @@ export class AudioService {
           playsInSilentModeIOS: true,
         });
 
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
+        const customOptions: Audio.RecordingOptions = {
+          isMeteringEnabled: false,
+          android: {
+            extension: '.aac',
+            outputFormat: Audio.AndroidOutputFormat.AAC_ADTS,
+            audioEncoder: Audio.AndroidAudioEncoder.AAC,
+            sampleRate: 44100,
+            numberOfChannels: 1,
+            bitRate: 128000,
+          },
+          ios: {
+            extension: '.wav',
+            audioQuality: Audio.IOSAudioQuality.HIGH,
+            sampleRate: 44100,
+            numberOfChannels: 1,
+            bitRate: 128000,
+            linearPCMBitDepth: 16,
+            linearPCMIsBigEndian: false,
+            linearPCMIsFloat: false,
+          },
+          web: {
+            mimeType: 'audio/webm',
+            bitsPerSecond: 128000,
+          },
+        };
+
+        const { recording } = await Audio.Recording.createAsync(customOptions);
         this.recording = recording;
       } else {
         throw new Error('Microphone permission not granted');
