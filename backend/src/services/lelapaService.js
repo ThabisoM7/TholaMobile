@@ -33,8 +33,9 @@ class LelapaService {
 
       return response.data.text || '';
     } catch (error) {
-      console.error('Lelapa ASR Error:', error.response?.data || error.message);
-      throw new Error('Failed to transcribe audio via Lelapa API');
+      const errDetail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      console.error('Lelapa ASR Error:', errDetail);
+      throw new Error(`Failed to transcribe audio via Lelapa API: ${errDetail}`);
     }
   }
 

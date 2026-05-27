@@ -86,10 +86,10 @@ const processVoiceQuery = async (req, res) => {
       results: searchResults
     });
 
-  } catch (error) {
-    console.error('Assistant Controller Error:', error);
-    res.status(500).json({ error: 'Internal Server Error while processing voice query' });
-  }
+    } catch (error) {
+      console.error('Error processing voice query:', error);
+      res.status(500).json({ error: error.message, stack: error.stack });
+    }
 };
 
 module.exports = {

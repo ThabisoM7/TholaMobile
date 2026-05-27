@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import * as SecureStore from 'expo-secure-store';
 import apiClient from '../api/client';
 
 export class AudioService {
@@ -72,13 +73,22 @@ export class AudioService {
       formData.append('lat', lat.toString());
       formData.append('lng', lng.toString());
 
-      const response = await apiClient.post('/api/assistant/voice-query', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const token = await SecureStore.getItemAsync('userToken');
+      const response = await fetch(`${apiClient.defaults.baseURL}/api/assistant/voice-query`, {
+        method: 'POST',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {},
+        body: formData,
       });
 
-      return response.data;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Backend Voice Query Error:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Failed to send voice query', error);
       throw error;
