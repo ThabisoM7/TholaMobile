@@ -1,10 +1,11 @@
 module.exports = {
   "expo": {
-    "name": "frontend",
-    "slug": "tholaapp1",
+    "name": "TholaApp",
+    "slug": "tholaapp",
+    "owner": "tattshq",
     "extra": {
       "eas": {
-        "projectId": "9559ea0e-6128-42e3-81ad-bed10c757438"
+        "projectId": "148007e1-d221-4433-a3ad-74a499a2b478"
       }
     },
     "version": "1.0.0",

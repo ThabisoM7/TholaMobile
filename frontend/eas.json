@@ -9,7 +9,7 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://tholaagentprod.up.railway.app",
         "EXPO_PUBLIC_MAPBOX_PK": "pk.eyJ1IjoidGF0dHMtaW8iLCJhIjoiY21rYzE4bzVhMDYwMTNlczlnc3ptY3kycSJ9.OWV15N1DaMYFHQat3ZYbaw"
       }
     },
@@ -23,7 +23,7 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://tholaagentprod.up.railway.app",
         "EXPO_PUBLIC_MAPBOX_PK": "pk.eyJ1IjoidGF0dHMtaW8iLCJhIjoiY21rYzE4bzVhMDYwMTNlczlnc3ptY3kycSJ9.OWV15N1DaMYFHQat3ZYbaw"
       }
     },
@@ -34,7 +34,7 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://jnhlfskjmtuhzpmxiidr.supabase.co",
         "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_bDxmiCn3FMB_lQv7jMk9jg_Dsh9Ysty",
-        "EXPO_PUBLIC_API_URL": "https://tholamobile.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://tholaagentprod.up.railway.app",
         "EXPO_PUBLIC_MAPBOX_PK": "pk.eyJ1IjoidGF0dHMtaW8iLCJhIjoiY21rYzE4bzVhMDYwMTNlczlnc3ptY3kycSJ9.OWV15N1DaMYFHQat3ZYbaw"
       }
     }
