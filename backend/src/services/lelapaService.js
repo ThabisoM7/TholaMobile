@@ -34,7 +34,7 @@ class LelapaService {
         },
       });
 
-      return response.data.text || '';
+      return response.data;
     } catch (error) {
       const errDetail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
       console.error('Lelapa ASR Error:', errDetail);
