@@ -61,12 +61,14 @@ class RagService {
     }
   }
 
-  async generateResponse(query, results) {
+  async generateResponse(query, results, languageCode = 'eng') {
     const prompt = `
       You are Thola's helpful voice assistant. The user asked: "${query}".
       Here are the search results from the database: ${JSON.stringify(results)}.
       Generate a friendly, concise, and helpful response summarizing the best options. 
       Keep it short as it will be spoken back to the user via Text-to-Speech.
+      IMPORTANT: You MUST write your final response fluently in the language corresponding to this ISO code: '${languageCode}' (e.g. 'zul' = Zulu, 'eng' = English, 'xho' = Xhosa).
+      If the language is Zulu, make sure the grammar and phrasing are perfectly natural Zulu, even when mentioning English business names.
     `;
 
     try {

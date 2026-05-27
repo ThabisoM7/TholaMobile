@@ -68,8 +68,8 @@ const processVoiceQuery = async (req, res) => {
 
     const searchResults = await prisma.$queryRawUnsafe(sqlQuery, ...params);
 
-    const englishResponse = await ragService.generateResponse(englishQuery, searchResults);
-    const nativeResponse = await lelapaService.translateText(englishResponse, 'eng', sourceLang);
+    const nativeResponse = await ragService.generateResponse(englishQuery, searchResults, sourceLang);
+    const englishResponse = nativeResponse; // Optional: we can just use nativeResponse for both
     const audioUrl = await lelapaService.textToSpeech(nativeResponse, sourceLang);
 
     res.status(200).json({
