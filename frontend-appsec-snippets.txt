@@ -1,0 +1,99 @@
+Frontend Application Security (AppSec) Snippets
+===============================================
+These snippets demonstrate key AppSec principles implemented in the Thola mobile application frontend.
+
+1. Secure Credential Storage (Token Management)
+-----------------------------------------------
+Location: frontend/src/store/authStore.ts
+AppSec Principle: Secure Storage & Data at Rest Encryption
+
+Description: Instead of storing sensitive authentication tokens in plain text (like AsyncStorage or localStorage), the application uses `expo-secure-store`. This leverages native OS-level secure storage (Keychain on iOS and Keystore on Android) to encrypt the JWT tokens, preventing malicious apps or users with physical device access from easily extracting session credentials.
+
+```typescript
+import { create } from 'zustand';
+import * as SecureStore from 'expo-secure-store'; // Uses OS-level hardware encryption
+
+// ... 
+
+  login: async (userData, token) => {
+    // Tokens are encrypted and stored in the device's secure enclave (Keychain/Keystore)
+    await SecureStore.setItemAsync('userToken', token);
+    await SecureStore.setItemAsync('userData', JSON.stringify(userData));
+    set({ user: userData, token, isLoading: false });
+  },
+
+  logout: async () => {
+    // Explicitly delete tokens from the secure enclave upon logout
+    await SecureStore.deleteItemAsync('userToken');
+    await SecureStore.deleteItemAsync('userData');
+    set({ user: null, token: null, isLoading: false });
+  },
+```
+
+
+2. Client-Side Input Validation & Error Obfuscation
+---------------------------------------------------
+Location: frontend/src/app/(auth)/register.tsx
+AppSec Principle: Input Validation & Information Hiding
+
+Description: The application validates sensitive inputs (like password confirmation) on the client side before making unnecessary network requests. Furthermore, when the API returns an error, the frontend safely handles it without exposing raw stack traces or internal backend logic to the user, providing a generic fallback message instead.
+
+```typescript
+  const handleRegister = async () => {
+    // 1. Client-Side Validation: Ensure passwords match before network request
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await apiClient.post('/auth/register', { 
+        full_name: fullName, 
+        email, 
+        password,
+        role: role || 'CUSTOMER'
+      });
+      await login(response.data, response.data.token);
+      
+    } catch (err: any) {
+      // 2. Information Hiding: Do not expose raw stack traces to the UI
+      console.log('Registration Error Details:', err.response?.data || err.message);
+      
+      // Provide a safe, sanitized error message to the user
+      setError(
+        err.response?.data?.message || 
+        'Registration failed. Please check your connection and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+```
+
+
+3. Route Guarding (Access Control)
+----------------------------------
+Location: frontend/src/app/index.tsx
+AppSec Principle: Client-Side Access Control (Route Protection)
+
+Description: The root component acts as a guard. If a user is already authenticated (meaning a valid session exists in the secure store), they are automatically redirected to the protected `/(main)/map` route. This prevents authenticated users from accessing login screens, and conversely, unauthenticated users from accessing protected main application screens.
+
+```tsx
+import { useRouter, Redirect } from 'expo-router';
+import { useAuthStore } from '../store/authStore';
+
+export default function Index() {
+  const { user } = useAuthStore(); // Retrieves session state from secure storage
+  
+  // Route Guarding: If user has an active session, block access to landing/auth 
+  // pages and redirect directly to the protected main application.
+  if (user) {
+    return <Redirect href="/(main)/map" />;
+  }
+
+  return (
+    // ... Landing page UI for unauthenticated users ...
+  );
+}
+```

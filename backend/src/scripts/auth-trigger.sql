@@ -16,7 +16,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 -- 2. Create the trigger on the auth.users table
 -- This triggers automatically when Supabase successfully creates the verified user
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

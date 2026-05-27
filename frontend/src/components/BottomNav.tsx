@@ -5,10 +5,13 @@ import { router, usePathname } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 
+import VoiceAssistantModal from './VoiceAssistantModal';
+
 export default function BottomNav() {
   const theme = useTheme();
   const { user } = useAuthStore();
   const pathname = usePathname();
+  const [assistantVisible, setAssistantVisible] = React.useState(false);
 
   // Hide on certain screens
   const hiddenScreens = ['/edit-profile', '/kyc-intro', '/vendor-registration'];
@@ -22,74 +25,96 @@ export default function BottomNav() {
   const isProfile = pathname.includes('/profile');
   const isLoyalty = pathname.includes('/loyalty');
 
-  return (
-    <View style={[styles.bottomNav, { backgroundColor: theme.colors.surface }]}>
-      <TouchableOpacity 
-        style={styles.navItem}
-        onPress={() => router.push('/(main)/map')}
-      >
-        <MaterialCommunityIcons 
-          name={isMap ? "map" : "map-outline"} 
-          size={28} 
-          color={isMap ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-        />
-        <Text style={[styles.navText, { color: isMap ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Explore</Text>
-      </TouchableOpacity>
+  const isVendor = user?.role === 'VENDOR';
+  const isCustomer = user?.role === 'CUSTOMER' || !isVendor;
 
-      {user?.role === 'VENDOR' && (
+  return (
+    <>
+      <View style={[styles.bottomNav, { backgroundColor: theme.colors.surface }]}>
         <TouchableOpacity 
           style={styles.navItem}
-          onPress={() => router.push('/(main)/vendor-dashboard')}
+          onPress={() => router.push('/(main)/map')}
         >
           <MaterialCommunityIcons 
-            name={isDashboard ? "view-dashboard" : "view-dashboard-outline"} 
+            name={isMap ? "map" : "map-outline"} 
             size={28} 
-            color={isDashboard ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+            color={isMap ? theme.colors.primary : theme.colors.onSurfaceVariant} 
           />
-          <Text style={[styles.navText, { color: isDashboard ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Dashboard</Text>
+          <Text style={[styles.navText, { color: isMap ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Explore</Text>
         </TouchableOpacity>
-      )}
 
-      {user?.role === 'CUSTOMER' && (
-        <>
+        {isVendor && (
           <TouchableOpacity 
             style={styles.navItem}
-            onPress={() => router.push('/(main)/favorites')}
+            onPress={() => router.push('/(main)/vendor-dashboard')}
           >
             <MaterialCommunityIcons 
-              name={isFavorites ? "heart" : "heart-outline"} 
+              name={isDashboard ? "view-dashboard" : "view-dashboard-outline"} 
               size={28} 
-              color={isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+              color={isDashboard ? theme.colors.primary : theme.colors.onSurfaceVariant} 
             />
-            <Text style={[styles.navText, { color: isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Favorites</Text>
+            <Text style={[styles.navText, { color: isDashboard ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Dashboard</Text>
           </TouchableOpacity>
+        )}
 
-          <TouchableOpacity 
-            style={styles.navItem}
-            onPress={() => router.push('/(main)/loyalty')}
-          >
-            <MaterialCommunityIcons 
-              name={isLoyalty ? "ticket-confirmation" : "ticket-confirmation-outline"} 
-              size={28} 
-              color={isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-            />
-            <Text style={[styles.navText, { color: isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Stamps</Text>
-          </TouchableOpacity>
-        </>
-      )}
+        {isCustomer && (
+          <>
+            <TouchableOpacity 
+              style={styles.navItem}
+              onPress={() => router.push('/(main)/favorites')}
+            >
+              <MaterialCommunityIcons 
+                name={isFavorites ? "heart" : "heart-outline"} 
+                size={28} 
+                color={isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+              />
+              <Text style={[styles.navText, { color: isFavorites ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Favorites</Text>
+            </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={styles.navItem}
-        onPress={() => router.push('/(main)/profile')}
-      >
-        <MaterialCommunityIcons 
-          name={isProfile ? "account" : "account-outline"} 
-          size={28} 
-          color={isProfile ? theme.colors.primary : theme.colors.onSurfaceVariant} 
-        />
-        <Text style={[styles.navText, { color: isProfile ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Profile</Text>
-      </TouchableOpacity>
-    </View>
+            <TouchableOpacity 
+              style={styles.navItem}
+              onPress={() => router.push('/(main)/loyalty')}
+            >
+              <MaterialCommunityIcons 
+                name={isLoyalty ? "ticket-confirmation" : "ticket-confirmation-outline"} 
+                size={28} 
+                color={isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+              />
+              <Text style={[styles.navText, { color: isLoyalty ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Stamps</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => setAssistantVisible(true)}
+        >
+          <MaterialCommunityIcons 
+            name="microphone-outline" 
+            size={28} 
+            color={theme.colors.onSurfaceVariant} 
+          />
+          <Text style={[styles.navText, { color: theme.colors.onSurfaceVariant }]}>Ask AI</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => router.push('/(main)/profile')}
+        >
+          <MaterialCommunityIcons 
+            name={isProfile ? "account" : "account-outline"} 
+            size={28} 
+            color={isProfile ? theme.colors.primary : theme.colors.onSurfaceVariant} 
+          />
+          <Text style={[styles.navText, { color: isProfile ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+
+      <VoiceAssistantModal 
+        visible={assistantVisible} 
+        onDismiss={() => setAssistantVisible(false)} 
+      />
+    </>
   );
 }
 

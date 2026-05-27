@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector, postgis]
 }
 
 model User {
@@ -76,6 +78,7 @@ model Product {
   image_url   String?
   category    String
   in_stock    Boolean  @default(true)
+  embedding   Unsupported("vector(768)")?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

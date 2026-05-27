@@ -10,7 +10,7 @@ import { useAuthStore } from '../../store/authStore';
 import apiClient from '../../api/client';
 import { uploadImage } from '../../api/supabase';
 import { useLocalSearchParams, router } from 'expo-router';
-import { mapStyle } from '../../utils/mapStyle';
+import { customMapStyle } from '../../utils/mapStyle';
 
 export default function ManageBusiness() {
   const theme = useTheme();
@@ -889,7 +889,7 @@ export default function ManageBusiness() {
                     {logoUri ? (
                       <Image source={{ uri: logoUri }} style={styles.pickedLogo} />
                     ) : (
-                      <View style={styles.logoPlaceholder}>
+                      <View style={styles.bannerUploadPlaceholder}>
                         <IconButton icon="camera" size={30} />
                         <Text style={{ fontSize: 10, textAlign: 'center', color: theme.colors.onSurface }}>Logo</Text>
                       </View>
@@ -1307,8 +1307,8 @@ export default function ManageBusiness() {
               contentContainerStyle={[styles.modalContent, { backgroundColor: theme.colors.background }]}
             >
               <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
-                <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Pin Business Spot</Text>
-                <IconButton icon="close" iconColor={theme.colors.onSurface} onPress={() => setShowMap(false)} />
+                <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Pin Your Business</Text>
+                <IconButton icon="close" onPress={() => setShowMap(false)} />
               </View>
               
               <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
@@ -1320,7 +1320,7 @@ export default function ManageBusiness() {
                   onSubmitEditing={handleSearch}
                   textColor={theme.colors.onSurface}
                   placeholderTextColor={theme.colors.onSurfaceVariant}
-                  right={<TextInput.Icon icon="magnify" iconColor={theme.colors.primary} onPress={handleSearch} />}
+                  right={<TextInput.Icon icon="magnify" color={theme.colors.primary} onPress={handleSearch} />}
                 />
               </View>
 
@@ -1621,6 +1621,16 @@ const styles = StyleSheet.create({
   pickedLogo: {
     width: '100%',
     height: '100%',
+  },
+  bannerUploadPlaceholder: {
+    height: 150,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
   },
   logoPlaceholder: {
     alignItems: 'center',

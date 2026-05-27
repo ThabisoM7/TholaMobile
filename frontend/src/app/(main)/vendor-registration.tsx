@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import Mapbox from '@rnmapbox/maps';
 import apiClient from '../../api/client';
-import { mapStyle } from '../../utils/mapStyle';
+
 
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_PK;
 if (MAPBOX_TOKEN) {
@@ -271,7 +271,7 @@ export default function VendorRegistrationScreen() {
           >
             <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
               <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>Pin Your Business</Text>
-              <IconButton icon="close" iconColor={theme.colors.onSurface} onPress={() => setShowMap(false)} />
+              <IconButton icon="close" onPress={() => setShowMap(false)} />
             </View>
             
             <View style={[styles.searchBox, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? '#333' : '#eee', borderBottomWidth: 1 }]}>
@@ -283,7 +283,7 @@ export default function VendorRegistrationScreen() {
                 textColor={theme.colors.onSurface}
                 placeholderTextColor={theme.colors.onSurfaceVariant}
                 onSubmitEditing={handleSearch}
-                right={<TextInput.Icon icon="magnify" iconColor={theme.colors.primary} onPress={handleSearch} />}
+                right={<TextInput.Icon icon="magnify" color={theme.colors.primary} onPress={handleSearch} />}
               />
             </View>
 

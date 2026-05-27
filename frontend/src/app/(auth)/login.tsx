@@ -34,8 +34,8 @@ export default function LoginScreen() {
   };
 
   const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      setError('Please enter the 6-digit code.');
+    if (otp.length !== 8) {
+      setError('Please enter the 8-digit code.');
       return;
     }
     setLoading(true);
@@ -116,13 +116,13 @@ export default function LoginScreen() {
 
         {step === 'OTP' && (
           <>
-            <Text style={{ marginBottom: 16 }}>We sent a 6-digit login code to {email}</Text>
+            <Text style={{ marginBottom: 16 }}>We sent an 8-digit login code to {email}</Text>
             <TextInput
-              label="6-Digit OTP Code"
+              label="8-Digit OTP Code"
               value={otp}
               onChangeText={(text) => { setOtp(text); setError(''); }}
               keyboardType="number-pad"
-              maxLength={6}
+              maxLength={8}
               style={styles.input}
               mode="outlined"
             />

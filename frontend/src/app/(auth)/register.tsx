@@ -1,102 +1,42 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { TextInput, Button, Text, HelperText, useTheme, Divider, Checkbox, Portal, Modal } from 'react-native-paper';
+import { TextInput, Button, Text, useTheme, Checkbox, Portal, Modal } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
-import { supabase } from '../../api/supabase';
-import { isValidSAMobileNumber } from '../../utils/validation';
 import { useAuthStore } from '../../store/authStore';
+import apiClient from '../../api/client';
 import { TERMS_AND_CONDITIONS, POPIA_POLICY } from '../../constants/policies';
 
 export default function RegisterScreen() {
   const { role } = useLocalSearchParams<{ role: string }>();
-  const theme = useTheme();
-
-  // State
-  const [step, setStep] = useState<'EMAIL' | 'OTP' | 'PHONE'>('EMAIL');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Policies State
+  
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [activePolicy, setActivePolicy] = useState<'T&C' | 'POPIA'>('T&C');
+  
+  const { login } = useAuthStore();
+  const theme = useTheme();
 
-  const handleSendOTP = async () => {
-    if (!email) {
-      setError('Please enter a valid email address.');
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
-    
-    setLoading(true);
-    setError('');
-    
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-      },
-    });
-
-    setLoading(false);
-
-    if (authError) {
-      setError(authError.message);
-    } else {
-      setStep('OTP');
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      setError('Please enter the 6-digit code.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
-
-    setLoading(false);
-
-    if (verifyError) {
-      setError('Invalid code. Please try again.');
-    } else if (data.session) {
-      const { login } = useAuthStore.getState();
-      await login(data.session.user as any, data.session.access_token);
-      setStep('PHONE');
-    }
-  };
-
-  const handleSavePhone = async () => {
-    if (!isValidSAMobileNumber(phone)) {
-      setError('Please enter a valid SA mobile number (e.g. 072 123 4567)');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No active session found");
-
-      const { error: updateError } = await supabase
-        .from('User')
-        .update({ 
-          phone_number: phone,
-          role: role || 'CUSTOMER'
-        })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
+      setLoading(true);
+      setError('');
+      const response = await apiClient.post('/auth/register', { 
+        full_name: fullName, 
+        email, 
+        password,
+        role: role || 'CUSTOMER'
+      });
+      await login(response.data, response.data.token);
       
       if (role === 'VENDOR') {
         router.replace('/(main)/vendor-registration');
@@ -104,7 +44,8 @@ export default function RegisterScreen() {
         router.replace('/(main)/map');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to save phone number.');
+      console.log('Registration Error Details:', err.response?.data || err.message);
+      setError(err.response?.data?.message || 'Registration failed. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -121,115 +62,72 @@ export default function RegisterScreen() {
           {role === 'VENDOR' ? 'Register your business profile' : 'Start discovering local goods'}
         </Text>
         
-        {step === 'EMAIL' && (
-          <>
-            <TextInput
-              label="Email Address"
-              value={email}
-              onChangeText={(text) => { setEmail(text); setError(''); }}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              mode="outlined"
-              style={styles.input}
-              disabled={loading}
-            />
-            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
-            
-            <View style={styles.checkboxContainer}>
-              <Checkbox.Android 
-                status={acceptedTerms ? 'checked' : 'unchecked'} 
-                onPress={() => setAcceptedTerms(!acceptedTerms)} 
-                color={theme.colors.primary}
-              />
-              <Text variant="bodyMedium" style={styles.checkboxLabel}>
-                I accept the{' '}
-                <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('T&C'); setModalVisible(true); }}>
-                  Terms & Conditions
-                </Text>
-                {' '}and{' '}
-                <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('POPIA'); setModalVisible(true); }}>
-                  POPIA Policy
-                </Text>
-              </Text>
-            </View>
+        {error ? <Text style={{ color: theme.colors.error, marginBottom: 10 }}>{error}</Text> : null}
 
-            <Button 
-              mode="contained" 
-              onPress={handleSendOTP} 
-              loading={loading}
-              disabled={loading || !acceptedTerms}
-              style={styles.button}
-              contentStyle={{ paddingVertical: 8 }}
-            >
-              Send Verification Code
-            </Button>
-          </>
-        )}
+        <TextInput
+          label="Full Name"
+          value={fullName}
+          onChangeText={setFullName}
+          style={styles.input}
+          mode="outlined"
+        />
 
-        {step === 'OTP' && (
-          <>
-            <Text style={{ marginBottom: 16 }}>We sent a 6-digit code to {email}</Text>
-            <TextInput
-              label="6-Digit OTP Code"
-              value={otp}
-              onChangeText={(text) => { setOtp(text); setError(''); }}
-              keyboardType="number-pad"
-              maxLength={6}
-              mode="outlined"
-              style={styles.input}
-              disabled={loading}
-            />
-            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
-            
-            <Button 
-              mode="contained" 
-              onPress={handleVerifyOTP} 
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-              contentStyle={{ paddingVertical: 8 }}
-            >
-              Verify Email
-            </Button>
-            
-            <Button 
-              mode="text" 
-              onPress={() => setStep('EMAIL')}
-              disabled={loading}
-              style={{ marginTop: 8 }}
-            >
-              Use a different email
-            </Button>
-          </>
-        )}
+        <TextInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          style={styles.input}
+          mode="outlined"
+        />
+        
+        <TextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+          mode="outlined"
+        />
 
-        {step === 'PHONE' && (
-          <>
-            <Text style={{ marginBottom: 16 }}>Almost done! What's your mobile number?</Text>
-            <TextInput
-              label="Phone Number"
-              value={phone}
-              onChangeText={(text) => { setPhone(text); setError(''); }}
-              keyboardType="phone-pad"
-              mode="outlined"
-              placeholder="082 123 4567"
-              style={styles.input}
-              disabled={loading}
-            />
-            {error ? <HelperText type="error" visible={!!error}>{error}</HelperText> : null}
-            
-            <Button 
-              mode="contained" 
-              onPress={handleSavePhone} 
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-              contentStyle={{ paddingVertical: 8 }}
-            >
-              Complete Registration
-            </Button>
-          </>
-        )}
+        <TextInput
+          label="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          style={styles.input}
+          mode="outlined"
+        />
+
+        <View style={styles.checkboxContainer}>
+          <Checkbox.Android 
+            status={acceptedTerms ? 'checked' : 'unchecked'} 
+            onPress={() => setAcceptedTerms(!acceptedTerms)} 
+            color={theme.colors.primary}
+          />
+          <Text variant="bodyMedium" style={styles.checkboxLabel}>
+            I accept the{' '}
+            <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('T&C'); setModalVisible(true); }}>
+              Terms & Conditions
+            </Text>
+            {' '}and{' '}
+            <Text style={[styles.link, { color: theme.colors.primary }]} onPress={() => { setActivePolicy('POPIA'); setModalVisible(true); }}>
+              POPIA Policy
+            </Text>
+          </Text>
+        </View>
+
+        <Button 
+          mode="contained" 
+          onPress={handleRegister} 
+          loading={loading}
+          disabled={loading || !acceptedTerms}
+          style={styles.button}
+          contentStyle={{ paddingVertical: 8 }}
+        >
+          Register
+        </Button>
 
         <Portal>
           <Modal 
@@ -260,27 +158,58 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { padding: 24, flexGrow: 1, justifyContent: 'center' },
-  title: { fontWeight: 'bold', marginBottom: 8 },
-  subtitle: { marginBottom: 32, opacity: 0.7 },
-  input: { marginBottom: 16, backgroundColor: '#fff' },
-  button: { marginTop: 8, borderRadius: 8 },
+  container: {
+    flex: 1,
+  },
+  scroll: {
+    padding: 24,
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    marginBottom: 32,
+    color: '#666',
+  },
+  input: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  button: {
+    marginTop: 8,
+    borderRadius: 8,
+  },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     paddingRight: 24,
   },
-  checkboxLabel: { flex: 1, lineHeight: 20 },
-  link: { fontWeight: 'bold' },
+  checkboxLabel: {
+    flex: 1,
+    lineHeight: 20,
+  },
+  link: {
+    fontWeight: 'bold',
+  },
   modalContent: {
     margin: 20,
     borderRadius: 12,
     padding: 20,
     maxHeight: '80%',
   },
-  modalTitle: { fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-  modalScroll: { marginBottom: 16 },
-  modalCloseBtn: { borderRadius: 8 }
+  modalTitle: {
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalScroll: {
+    marginBottom: 16,
+  },
+  modalCloseBtn: {
+    borderRadius: 8,
+  }
 });
