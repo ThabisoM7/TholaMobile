@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Modal, Portal, Text, useTheme, IconButton, ActivityIndicator } from 'react-native-paper';
+import React, { useState, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, FlatList, Animated } from 'react-native';
+import { Modal, Portal, Text, useTheme, IconButton, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import * as Location from 'expo-location';
+import * as Speech from 'expo-speech';
 import { audioService } from '../services/audioService';
 
 interface VoiceAssistantModalProps {
@@ -9,13 +10,25 @@ interface VoiceAssistantModalProps {
   onDismiss: () => void;
 }
 
+type Message = {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+};
+
 export default function VoiceAssistantModal({ visible, onDismiss }: VoiceAssistantModalProps) {
   const theme = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [responseAudio, setResponseAudio] = useState<string | null>(null);
-  const [transcription, setTranscription] = useState('');
-  const [replyText, setReplyText] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('zul');
+  const flatListRef = useRef<FlatList>(null);
+
+  const handleClose = () => {
+    setMessages([]);
+    Speech.stop();
+    onDismiss();
+  };
 
   const handleRecordPress = async () => {
     if (isRecording) {
@@ -27,9 +40,7 @@ export default function VoiceAssistantModal({ visible, onDismiss }: VoiceAssista
 
   const startRecording = async () => {
     try {
-      setResponseAudio(null);
-      setTranscription('');
-      setReplyText('');
+      Speech.stop();
       await audioService.startRecording();
       setIsRecording(true);
     } catch (error) {
@@ -56,45 +67,85 @@ export default function VoiceAssistantModal({ visible, onDismiss }: VoiceAssista
         lng = location.coords.longitude;
       }
 
-      // Send to backend (assume Zulu 'zul' for this MVP, could be selectable)
-      const data = await audioService.sendVoiceQuery(uri, 'zul', lat, lng);
+      // Send to backend with selected language
+      const data = await audioService.sendVoiceQuery(uri, selectedLanguage, lat, lng);
       
       if (data.success) {
-        setTranscription(data.query.native);
-        setReplyText(data.response.text);
+        const userMsg: Message = { id: Date.now().toString() + '-u', sender: 'user', text: data.query.native };
+        const astMsg: Message = { id: Date.now().toString() + '-a', sender: 'assistant', text: data.response.text };
+        
+        setMessages(prev => [...prev, userMsg, astMsg]);
+        
         if (data.response.audioUrl) {
-          setResponseAudio(data.response.audioUrl);
           await audioService.playAudio(data.response.audioUrl);
+        } else {
+          // Fallback to expo-speech
+          let ttsLang = 'zu-ZA';
+          if (selectedLanguage === 'eng') ttsLang = 'en-ZA';
+          if (selectedLanguage === 'sot') ttsLang = 'st-ZA';
+          
+          Speech.speak(data.response.text, { language: ttsLang });
         }
       }
     } catch (error) {
       console.error('Processing failed', error);
-      setReplyText('Sorry, I could not process your request at this time.');
+      setMessages(prev => [...prev, { id: Date.now().toString() + '-e', sender: 'assistant', text: 'Sorry, I could not process your request at this time.' }]);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const renderMessage = ({ item }: { item: Message }) => {
+    const isUser = item.sender === 'user';
+    return (
+      <View style={[styles.messageBubble, isUser ? [styles.userBubble, { backgroundColor: theme.colors.primary }] : [styles.assistantBubble, { backgroundColor: theme.colors.surfaceVariant }]]}>
+        <Text style={{ color: isUser ? '#fff' : theme.colors.onSurface }}>{item.text}</Text>
+      </View>
+    );
+  };
+
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}>
-        <Text style={[styles.title, { color: theme.colors.primary }]}>Thola Assistant</Text>
+      <Modal visible={visible} onDismiss={handleClose} contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.colors.primary }]}>Thola Assistant</Text>
+          <IconButton icon="close" size={24} onPress={handleClose} style={styles.closeButton} />
+        </View>
         
-        <View style={styles.content}>
-          {transcription ? (
-            <Text style={styles.transcription}>You: "{transcription}"</Text>
-          ) : null}
-          
-          {replyText ? (
-            <Text style={styles.reply}>Assistant: "{replyText}"</Text>
-          ) : null}
+        <SegmentedButtons
+          value={selectedLanguage}
+          onValueChange={setSelectedLanguage}
+          buttons={[
+            { value: 'eng', label: 'English' },
+            { value: 'sot', label: 'Sotho' },
+            { value: 'zul', label: 'Zulu' },
+          ]}
+          style={styles.languageSelector}
+          density="small"
+        />
 
-          {isProcessing ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator animating={true} color={theme.colors.primary} size="large" />
-              <Text style={{ marginTop: 10, color: theme.colors.onSurfaceVariant }}>Thinking...</Text>
+        <View style={styles.chatContainer}>
+          {messages.length === 0 && !isProcessing && (
+            <View style={styles.emptyState}>
+              <Text style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+                Tap the microphone and ask me to find products or vendors near you!
+              </Text>
             </View>
-          ) : null}
+          )}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={item => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.messageList}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+          {isProcessing && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator animating={true} color={theme.colors.primary} size="small" />
+              <Text style={{ marginLeft: 10, color: theme.colors.onSurfaceVariant }}>Thinking...</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.recordContainer}>
@@ -110,7 +161,7 @@ export default function VoiceAssistantModal({ visible, onDismiss }: VoiceAssista
             />
           </TouchableOpacity>
           <Text style={{ marginTop: 8, color: theme.colors.onSurfaceVariant }}>
-            {isRecording ? 'Tap to Stop' : 'Tap to Speak (Zulu)'}
+            {isRecording ? 'Tap to Stop' : 'Tap to Speak'}
           </Text>
         </View>
       </Modal>
@@ -123,43 +174,69 @@ const styles = StyleSheet.create({
     padding: 20,
     margin: 20,
     borderRadius: 20,
+    height: '80%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 300,
+    marginBottom: 10,
+    position: 'relative',
   },
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
   },
-  content: {
+  closeButton: {
+    position: 'absolute',
+    right: -10,
+  },
+  languageSelector: {
+    marginBottom: 15,
+  },
+  chatContainer: {
     flex: 1,
     width: '100%',
+  },
+  emptyState: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  transcription: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    marginBottom: 10,
-    textAlign: 'center',
+  messageList: {
+    paddingBottom: 20,
   },
-  reply: {
-    fontSize: 18,
-    fontWeight: '500',
-    textAlign: 'center',
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 16,
+    marginVertical: 4,
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
   },
   loadingContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    padding: 10,
   },
   recordContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   recordButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,

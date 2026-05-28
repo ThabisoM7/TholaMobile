@@ -80,7 +80,7 @@ class RagService {
       return response.text || "I couldn't find anything matching your request right now.";
     } catch (error) {
       console.error('LLM Response Generation Error:', error);
-      return "I'm having trouble processing your request at the moment. Please try again later.";
+      return "I'm having trouble processing your request at the moment. Error: " + (error.message || error);
     }
   }
 }
