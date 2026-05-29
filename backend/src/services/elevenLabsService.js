@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const ELEVENLABS_API_BASE_URL = 'https://api.elevenlabs.io/v1';
-const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel (Very natural, adaptable to multilingual)
+const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Sarah (Allowed on Free Tier)
 
 class ElevenLabsService {
   constructor() {
