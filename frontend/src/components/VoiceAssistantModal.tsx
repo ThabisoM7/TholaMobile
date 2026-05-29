@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, FlatList, Animated } from 'react-na
 import { Modal, Portal, Text, useTheme, IconButton, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
+import * as FileSystem from 'expo-file-system';
 import { audioService } from '../services/audioService';
 
 interface VoiceAssistantModalProps {
@@ -76,7 +77,14 @@ export default function VoiceAssistantModal({ visible, onDismiss }: VoiceAssista
         
         setMessages(prev => [...prev, userMsg, astMsg]);
         
-        if (data.response.audioUrl) {
+        if (data.response.audioBase64) {
+          // Write the base64 string to a temporary file
+          const tempUri = `${FileSystem.cacheDirectory}elevenlabs_temp_${Date.now()}.mp3`;
+          await FileSystem.writeAsStringAsync(tempUri, data.response.audioBase64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          await audioService.playAudio(tempUri);
+        } else if (data.response.audioUrl) {
           await audioService.playAudio(data.response.audioUrl);
         } else {
           // Fallback to expo-speech

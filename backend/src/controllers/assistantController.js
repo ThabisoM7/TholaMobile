@@ -1,4 +1,5 @@
 const { lelapaService } = require('../services/lelapaService');
+const { elevenLabsService } = require('../services/elevenLabsService');
 const { ragService } = require('../services/ragService');
 const { PrismaClient } = require('@prisma/client');
 
@@ -70,7 +71,14 @@ const processVoiceQuery = async (req, res) => {
 
     const nativeResponse = await ragService.generateResponse(englishQuery, searchResults, sourceLang);
     const englishResponse = nativeResponse; // Optional: we can just use nativeResponse for both
-    const audioUrl = await lelapaService.textToSpeech(nativeResponse, sourceLang);
+    
+    // Use ElevenLabs to generate Base64 audio instead of Lelapa
+    let audioBase64 = null;
+    try {
+      audioBase64 = await elevenLabsService.textToSpeech(nativeResponse);
+    } catch (err) {
+      console.warn("ElevenLabs TTS failed, falling back to empty audio.", err);
+    }
 
     res.status(200).json({
       success: true,

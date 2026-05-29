@@ -18,6 +18,7 @@ Thola is a mobile-first, full-stack township commerce platform designed to conne
 - **Authentication**: JWT (JSON Web Tokens) & bcrypt
 - **File Handling**: Multer
 - **Validation**: express-validator
+- **AI & NLP**: Google Gemini API (Intent Extraction, Embeddings) & Lelapa AI (African Language ASR & Translation)
 
 ## 📂 Project Structure
 
@@ -76,3 +77,11 @@ Version `v1.5.2` transitions the app from `react-native-maps` to `@rnmapbox/maps
 - **Custom Mapbox Styling**: Integrated custom Mapbox styles across the platform (`map.tsx`, `vendor-registration.tsx`, `manage-business.tsx`).
 - **Security & Build Integrity**: Abstracted Mapbox API Keys (Public and Secret Download Tokens) to environment variables, securing the EAS build pipeline and removing hardcoded secrets from source control.
 - **Appetize.io Testing Pipeline**: Configured `eas.json` with simulator flags to support QA testing of both Android APKs and iOS `.tar.gz` Simulator builds on Appetize.io without requiring local emulators.
+
+## 🤖 Version 1.6.0 - Multilingual AI Voice Assistant (Latest Release)
+
+Version `v1.6.0` introduces a powerful AI-driven voice assistant tailored for South African users, breaking down language barriers in local commerce:
+
+- **🌍 African Language Support (Lelapa AI)**: Integrated Lelapa AI for highly accurate audio transcription (ASR) of local languages and seamless text translation.
+- **🧠 Intelligent Intent Extraction & RAG (Google Gemini)**: Leveraged Google Gemini (`gemini-2.5-flash` and `gemini-embedding-2`) to extract structured search intent (category, price, location) from natural language queries and generate vector embeddings.
+- **🗣️ Voice-First Search**: Users can now search for vendors and products using natural voice queries in their native language (e.g., Zulu, Xhosa, English), with the system generating context-aware, translated conversational responses.
