@@ -90,7 +90,7 @@ const processVoiceQuery = async (req, res) => {
       response: {
         text: nativeResponse,
         englishText: englishResponse,
-        audioUrl
+        audioBase64
       },
       results: searchResults
     });
