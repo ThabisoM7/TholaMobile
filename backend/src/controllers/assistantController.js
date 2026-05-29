@@ -59,7 +59,7 @@ const processVoiceQuery = async (req, res) => {
 
     if (embeddingVector) {
       const embeddingStr = `[${embeddingVector.join(',')}]`;
-      sqlQuery += ` ORDER BY p.embedding <=> $${paramIndex}::vector LIMIT 5;`;
+      sqlQuery += ` AND (p.embedding <=> $${paramIndex}::vector) < 0.65 ORDER BY p.embedding <=> $${paramIndex}::vector LIMIT 5;`;
       params.push(embeddingStr);
     } else if (intent.needsLocation && !isNaN(userLat) && !isNaN(userLng)) {
       sqlQuery += ` ORDER BY distance ASC LIMIT 5;`;
